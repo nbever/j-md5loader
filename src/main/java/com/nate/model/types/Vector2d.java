@@ -1,0 +1,20 @@
+package com.nate.model.types;
+
+public class Vector2d<T> {
+
+	private T u;
+	private T v;
+	
+	public Vector2d( T u, T v ){
+		this.u = u;
+		this.v = v;
+	}
+	
+	public T getU(){
+		return u;
+	}
+	
+	public T getV(){
+		return v;
+	}
+}
