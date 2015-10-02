@@ -1,6 +1,6 @@
 package com.nate.model.types;
 
-public class Vector2d<T> {
+public class Vector2d<T extends Number> {
 
 	private T u;
 	private T v;

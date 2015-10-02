@@ -2,7 +2,7 @@ package com.nate.model.parts;
 
 import com.nate.model.types.Vector3d;
 
-public class Weight<T> {
+public class Weight<T extends Number> {
 
 	private int index;
 	private int jointIndex;

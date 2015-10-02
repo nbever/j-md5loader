@@ -1,10 +1,12 @@
 package com.nate.model.types;
 
-public class Vertice<T> {
+public class Vertice<T extends Number> {
 
 	private Vector2d<T> textureCoordinates;
 	private int index;
-	private int[] weights = new int[2];
+	private int startWeight;
+	private int weightCount;
+	private Vector3d<Float> normal = new Vector3d<Float>( 0.0f, 0.0f, 0.0f );
 	
 	public static Vertice<Float> parseFloat( String line ) throws Exception{
 		
@@ -21,8 +23,8 @@ public class Vertice<T> {
 		vertice.setTextureCoordinates( new Vector2d<Float>( u, v ) );
 		vertice.setIndex( Integer.parseInt( tokens[1] ) );
 		
-		int[] weights = { Integer.parseInt( tokens[6] ), Integer.parseInt( tokens[7] ) };
-		vertice.setWeights( weights );
+		vertice.setStartWeight( Integer.parseInt( tokens[6] ) );
+		vertice.setWeightCount( Integer.parseInt( tokens[7] ) );
 		
 		return vertice;
 	}
@@ -47,11 +49,27 @@ public class Vertice<T> {
 		this.index = index;
 	}
 	
-	public int[] getWeights(){
-		return weights;
+	public int getStartingWeight(){
+		return startWeight;
 	}
 	
-	public void setWeights( int[] weights ){
-		this.weights = weights;
+	public void setStartWeight( int startWeight ){
+		this.startWeight = startWeight;
+	}
+	
+	public int getWeightCount(){
+		return weightCount;
+	}
+	
+	public void setWeightCount( int weightCount ){
+		this.weightCount = weightCount;
+	}
+	
+	public void setNormal( Vector3d<Float> normal ){
+		this.normal = normal;
+	}
+	
+	public Vector3d<Float> getNormal(){
+		return this.normal;
 	}
 }
