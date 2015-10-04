@@ -71,6 +71,10 @@ public class MD5Loader {
 			model.getMeshes()[j] = mesh;
 			model.prepareMesh( mesh );
 			model.prepareNormals( mesh );
+			
+			mesh.getPositionBuffer().flip();
+			mesh.getNormalBuffer().flip();
+			mesh.getIndexBuffer().flip();
 		}
 		
 		

@@ -44,7 +44,7 @@ public class MD5Model {
 			
 //			glBindTexture( GL_TEXTURE_2D, 0 );
 			glVertexPointer( 3, 0, mesh.getPositionBuffer() );
-//			glNormalPointer( 0, mesh.getNormalBuffer() );
+			glNormalPointer( 0, mesh.getNormalBuffer() );
 			//glTexCoordPointer( 2, GL_FLOAT, mesh.getTextureBuffer() );
 			glDrawElements( GL_TRIANGLES, mesh.getIndexBuffer() );
 			

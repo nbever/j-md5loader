@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
+import org.lwjgl.BufferUtils;
+
 import com.nate.model.types.Vertice;
 
 public class Mesh {
@@ -57,21 +59,14 @@ public class Mesh {
 	public void initializeVertices( int num ){
 		vertices = new Vertice[num];
 		
-		ByteBuffer bb = ByteBuffer.allocateDirect((num*4)*3);
-		positionBuffer = bb.asFloatBuffer();
-		positionBuffer.rewind();
-		
-		ByteBuffer nbb = ByteBuffer.allocateDirect( (num*4) * 3 );
-		normalBuffer = nbb.asFloatBuffer();
-		normalBuffer.rewind();
+		positionBuffer = BufferUtils.createFloatBuffer( num*3 );
+		normalBuffer = BufferUtils.createFloatBuffer( num*3 );
 	}
 	
 	public void initializeTriangles( int num ){
 		triangles = new Triangle[num];
 		
-		ByteBuffer bb = ByteBuffer.allocateDirect( ( num * 4 ) * 3 );
-		indexBuffer = bb.asIntBuffer();
-		indexBuffer.rewind();
+		indexBuffer = BufferUtils.createIntBuffer( num*3 );
 	}
 	
 	public void initializeWeights( int num ){
