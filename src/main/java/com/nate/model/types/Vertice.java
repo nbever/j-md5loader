@@ -7,6 +7,7 @@ public class Vertice<T extends Number> {
 	private int startWeight;
 	private int weightCount;
 	private Vector3d<Float> normal = new Vector3d<Float>( 0.0f, 0.0f, 0.0f );
+	private Vector3d<Float> position = new Vector3d<Float>( 0.0f, 0.0f, 0.0f );
 	
 	public static Vertice<Float> parseFloat( String line ) throws Exception{
 		
@@ -71,5 +72,13 @@ public class Vertice<T extends Number> {
 	
 	public Vector3d<Float> getNormal(){
 		return this.normal;
+	}
+	
+	public void setPosition( Vector3d<Float> position ){
+		this.position = position;
+	}
+	
+	public Vector3d<Float> getPosition(){
+		return position;
 	}
 }

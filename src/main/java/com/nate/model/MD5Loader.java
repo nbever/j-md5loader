@@ -69,7 +69,10 @@ public class MD5Loader {
 			
 			Mesh mesh = loadMesh( fileIn );
 			model.getMeshes()[j] = mesh;
+			model.prepareMesh( mesh );
+			model.prepareNormals( mesh );
 		}
+		
 		
 		return model;
 	}
@@ -99,7 +102,11 @@ public class MD5Loader {
 		
 		for ( int j = 0; j < numTris; j++ ){
 			line = getNextLine( fileIn );
-			mesh.getTriangles()[j] = Triangle.parse( line );
+			Triangle tri = Triangle.parse( line );
+			mesh.getTriangles()[j] = tri;
+			mesh.getIndexBuffer().put( tri.getVertices().getU() );
+			mesh.getIndexBuffer().put( tri.getVertices().getV() );
+			mesh.getIndexBuffer().put( tri.getVertices().getZ() );
 		}
 		
 		// the weights

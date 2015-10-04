@@ -1,11 +1,17 @@
 package com.nate.display;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.Sys;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 
+import com.nate.model.MD5Loader;
+import com.nate.model.MD5Model;
+
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.time.Instant;
 
 import static org.lwjgl.glfw.Callbacks.*;
@@ -25,16 +31,30 @@ public class MainDisplay {
 	// The window handle
 	private long window;
 	
+	private MD5Model model;
+	
+	private Float currentAngle = 0.0f;
+	private Float turnAmount = 0.0f;
+	
 	public void run() {
 		System.out.println("Hello LWJGL " + Sys.getVersion() + "!");
 		
+		URL url = MD5Model.class.getResource( "/boblampclean.md5mesh" );
+		
+		
 		try {
+
+			model = MD5Loader.loadModel( url.getFile() );
+			
 			init();
 			loop();
 
 			// Release window and window callbacks
 			glfwDestroyWindow(window);
 			keyCallback.release();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} finally {
 			// Terminate GLFW and release the GLFWerrorfun
 			glfwTerminate();
@@ -70,6 +90,25 @@ public class MainDisplay {
 					glfwSetWindowShouldClose(window, GL_TRUE); 
 					// We will detect this in our rendering loop
 				}
+				else if ( key == GLFW_KEY_RIGHT ){
+					
+					if ( action == GLFW_PRESS ){
+						setTurn( -5.0f );
+					}
+					else if ( action == GLFW_RELEASE ){
+						setTurn( 0.0f );
+					}
+				}
+				else if ( key == GLFW_KEY_LEFT ){
+					
+					if ( action == GLFW_PRESS ){
+						setTurn( 5.0f );
+					}
+					else if ( action == GLFW_RELEASE ){
+						setTurn( 0.0f );
+					}
+				}
+			
 			}
 		});
 
@@ -107,14 +146,36 @@ public class MainDisplay {
 	
 		glMatrixMode( GL_PROJECTION );
 		glLoadIdentity();
-		glOrtho( 0, 800, 0, 600, 1, -1 );
+		glOrtho( 0, 800, 0, 600, 0, -1000 );
 		glMatrixMode( GL_MODELVIEW );
+		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 		
 		long time = Instant.now().toEpochMilli();
 		long msPerFrame = 1000 / 60;
 		long msSince = 0;
 
 		float rotateZ = 0.0f;
+		
+		glTranslatef( (WIDTH / 2.0f ), 0.0f, 0.0f );
+		
+		float[] coords = {
+			0.0f, -1.0f, 50.0f,
+			1.0f, 1.0f, 50.0f,
+			-1.0f, 1.0f, 50.0f
+		};
+			
+		int[] indices = {
+			0, 1, 2
+		};
+		
+		FloatBuffer coordB = BufferUtils.createFloatBuffer( coords.length );
+		IntBuffer indiceB = BufferUtils.createIntBuffer( indices.length );
+		
+		coordB.put( coords );
+		indiceB.put( indices );
+		
+		coordB.flip();
+		indiceB.flip();
 		
 		// Run the rendering loop until the user has attempted to close
 		// the window or has pressed the ESCAPE key.
@@ -132,21 +193,28 @@ public class MainDisplay {
 				msSince = 0;
 			}
 			
+			currentAngle += getTurnAmount();
+			currentAngle %= 360.0f;
+		
+			glRotatef( getTurnAmount(), 0.0f, 1.0f, 0.0f );
+			glColor3f( 1.0f, 1.0f, 1.0f );
+			
 			glPushMatrix();
 			
-			glColor3f( 1.0f, 0.0f, 0.0f );
-			glTranslatef( (WIDTH / 2.0f ), (HEIGHT / 2.0f), 1.0f );
+			glTranslatef( 0.0f, 300.0f, 100.0f );
 			glRotatef( rotateZ, 0.0f, 0.0f, 1.0f );
-			glScalef( 100.0f, 100.0f, 100.0f);
+			glScalef( 15.0f, 15.0f, 15.0f);
 			
-			glBegin( GL_TRIANGLES );
-				
-				glVertex2f( 0.0f, -1.0f );
-				glVertex2f( 1.0f, 1.0f );
-				glVertex2f( -1.0f, 1.0f );
-			glEnd();
+			glEnableClientState( GL_VERTEX_ARRAY );
+			
+			glVertexPointer( 3, 0, coordB );
+			glDrawElements( GL_TRIANGLES, indiceB );
+			
+			glDisableClientState( GL_VERTEX_ARRAY );
 			
 			glPopMatrix();
+			
+			model.render();
 			
 			glfwSwapBuffers(window); // swap the color buffers
 
@@ -157,6 +225,18 @@ public class MainDisplay {
 			
 		}
 		
+	}
+	
+	private void setTurn( Float amount ){
+		turnAmount = amount;
+	}
+	
+	private Float getCurrentAngle(){
+		return currentAngle;
+	}
+	
+	private Float getTurnAmount(){
+		return turnAmount;
 	}
 	
 }

@@ -32,6 +32,18 @@ public class Vector3d<T extends Number> extends Vector2d<T>{
 		return normal;
 	}
 	
+	public Vector3d<Float> scalarf( Float factor ){
+		
+		Vector3d<Float> floatMe = makeFloat( this );
+		
+		Vector3d<Float> scalar = new Vector3d<Float>(
+				floatMe.getU() * factor,
+				floatMe.getV() * factor,
+				floatMe.getZ() * factor );
+		
+		return scalar;
+	}
+	
 	public Vector3d<Float> multiplyf( Vector3d<T> rightV ){
 		
 		Vector3d<Float> lfv = makeFloat( this );
