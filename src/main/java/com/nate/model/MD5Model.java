@@ -32,7 +32,7 @@ public class MD5Model {
 		glRotatef( -90.0f, 1.0f, 0.0f, 0.0f );
 
 		glEnableClientState( GL_VERTEX_ARRAY );
-//		glEnableClientState( GL_NORMAL_ARRAY );
+		glEnableClientState( GL_NORMAL_ARRAY );
 //		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		
 		for ( Mesh mesh : getMeshes() ){
@@ -112,6 +112,39 @@ public class MD5Model {
 		this.commandLine = commandLine;
 	}
 	
+//	bool MD5Model::PrepareMesh( Mesh& mesh )
+//	{
+//	    mesh.m_PositionBuffer.clear();
+//	    mesh.m_Tex2DBuffer.clear();
+//	 
+//	    // Compute vertex positions
+//	    for ( unsigned int i = 0; i < mesh.m_Verts.size(); ++i )
+//	    {
+//	        glm::vec3 finalPos(0);
+//	        Vertex& vert = mesh.m_Verts[i];
+//	 
+//	        vert.m_Pos = glm::vec3(0);
+//	        vert.m_Normal = glm::vec3(0);
+//	 
+//	        // Sum the position of the weights
+//	        for ( int j = 0; j < vert.m_WeightCount; ++j )
+//	        {
+//	            Weight& weight = mesh.m_Weights[vert.m_StartWeight + j];
+//	            Joint& joint = m_Joints[weight.m_JointID];
+//	 
+//	            // Convert the weight position from Joint local space to object space
+//	            glm::vec3 rotPos = joint.m_Orient * weight.m_Pos;
+//	 
+//	            vert.m_Pos += ( joint.m_Pos + rotPos ) * weight.m_Bias;
+//	        }
+//	 
+//	        mesh.m_PositionBuffer.push_back(vert.m_Pos);
+//	        mesh.m_Tex2DBuffer.push_back(vert.m_Tex0);
+//	    }
+//	 
+//	    return true;
+//	}
+	
 	public void prepareMesh( Mesh mesh ){
 		
 		mesh.getPositionBuffer().clear();
@@ -128,7 +161,7 @@ public class MD5Model {
 				
 				Vector3d<Float> rotationalPosition = joint.getOrientation().multiplyf( weight.getPosition() );
 				
-				Vector3d<Float> vPos = joint.getPosition().addf( rotationalPosition ).scalarf( weight.getWeightBias() );
+				Vector3d<Float> vPos = (joint.getPosition().addf( rotationalPosition )).scalarf( weight.getWeightBias() );
 				position = position.addf( vPos );
 				vert.setPosition( position );
 				
@@ -172,7 +205,7 @@ public class MD5Model {
 			vert2.setNormal( n2 );
 		}
 		
-		for ( int j = 0; j < mesh.getVertices().length; ++j ){
+		for ( int j = 0; j < mesh.getVertices().length; j++ ){
 			
 			Vertice<Float> vert = mesh.getVertices()[j];
 			

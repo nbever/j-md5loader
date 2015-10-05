@@ -40,6 +40,7 @@ public class MainDisplay {
 		System.out.println("Hello LWJGL " + Sys.getVersion() + "!");
 		
 		URL url = MD5Model.class.getResource( "/boblampclean.md5mesh" );
+//		URL url = MD5Model.class.getResource( "/hakuhoseamed.md5mesh" );
 		
 		
 		try {
@@ -214,7 +215,9 @@ public class MainDisplay {
 			
 			glPopMatrix();
 			
+			glPushMatrix();
 			model.render();
+			glPopMatrix();
 			
 			glfwSwapBuffers(window); // swap the color buffers
 
