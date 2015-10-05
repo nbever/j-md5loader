@@ -149,7 +149,7 @@ public class MainDisplay {
 		glLoadIdentity();
 		glOrtho( 0, 800, 0, 600, 0, -1000 );
 		glMatrixMode( GL_MODELVIEW );
-		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		
 		long time = Instant.now().toEpochMilli();
 		long msPerFrame = 1000 / 60;
@@ -159,14 +159,22 @@ public class MainDisplay {
 		
 		glTranslatef( (WIDTH / 2.0f ), 0.0f, 0.0f );
 		
-		float[] coords = {
-			0.0f, -1.0f, 50.0f,
-			1.0f, 1.0f, 50.0f,
-			-1.0f, 1.0f, 50.0f
+		float[] coords = { 0.5f, 0.5f, 5.0f, // V0
+				-0.5f, 0.5f, 5.0f, // V1
+				-0.5f, -0.5f, 5.0f, // V2
+				0.5f, -0.5f, 5.0f, // V3
+				0.5f, -0.5f, 4.5f, // V4
+				0.5f, 0.5f, 4.5f, // V5
+				-0.5f, 0.5f, 4.5f, // V6
+				-0.5f, -0.5f, 4.5f, // V7
 		};
 			
-		int[] indices = {
-			0, 1, 2
+		int[] indices = { 0, 1, 2, 3, // Front face
+				5, 0, 3, 4, // Right face
+				5, 6, 7, 4, // Back face
+				5, 6, 1, 0, // Upper face
+				1, 6, 7, 2, // Left face
+				7, 4, 3, 2, // Bottom face
 		};
 		
 		FloatBuffer coordB = BufferUtils.createFloatBuffer( coords.length );
@@ -204,7 +212,7 @@ public class MainDisplay {
 			
 			glTranslatef( 0.0f, 300.0f, 100.0f );
 			glRotatef( rotateZ, 0.0f, 0.0f, 1.0f );
-			glScalef( 15.0f, 15.0f, 15.0f);
+			glScalef( 20.0f, 20.0f, 20.0f);
 			
 			glEnableClientState( GL_VERTEX_ARRAY );
 			

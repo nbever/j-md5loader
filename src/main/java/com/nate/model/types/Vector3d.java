@@ -26,7 +26,7 @@ public class Vector3d<T extends Number> extends Vector2d<T>{
 		
 		Vector3d<Float> normal = new Vector3d<Float>( 
 				(lfv.getV()*rfv.getZ()) - (lfv.getZ()*rfv.getV()), 
-				-1*(lfv.getZ()*rfv.getU()) - (lfv.getU()*rfv.getZ()),
+				-1*((lfv.getU()*rfv.getZ()) - (lfv.getZ()*rfv.getU())),
 				(lfv.getU()*rfv.getV()) - (lfv.getV()*rfv.getU()) );
 		
 		return normal;

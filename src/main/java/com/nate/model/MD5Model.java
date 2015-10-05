@@ -156,20 +156,21 @@ public class MD5Model {
 			Vector3d<Float> position = vert.getPosition();
 			
 			for ( int j = 0; j < vert.getWeightCount(); j++ ){
+				
 				Weight<Float> weight = mesh.getWeights()[ vert.getStartingWeight() + j ];
 				Joint joint = getJoints()[ weight.getJointIndex() ];
 				
 				Vector3d<Float> rotationalPosition = joint.getOrientation().multiplyf( weight.getPosition() );
 				
-				Vector3d<Float> vPos = (joint.getPosition().addf( rotationalPosition )).scalarf( weight.getWeightBias() );
+				Vector3d<Float> sumV = joint.getPosition().addf( rotationalPosition );
+				Vector3d<Float> vPos = sumV.scalarf( weight.getWeightBias() );
 				position = position.addf( vPos );
 				vert.setPosition( position );
+				vert.setNormal( new Vector3d<Float>( 0.0f, 0.0f, 0.0f ) );
 				
 			}// all the weights and joints
 			
-			mesh.getPositionBuffer().put( position.getU() );
-			mesh.getPositionBuffer().put( position.getV() );
-			mesh.getPositionBuffer().put( position.getZ() );
+			mesh.getPositionBuffer().put( new float[]{ position.getU(), position.getV(), position.getZ() } );
 		}
 	}
 	
@@ -211,9 +212,7 @@ public class MD5Model {
 			
 			Vector3d<Float> normal = vert.getNormal().normalizef();
 			
-			mesh.getNormalBuffer().put( normal.getU() );
-			mesh.getNormalBuffer().put( normal.getV() );
-			mesh.getNormalBuffer().put( normal.getZ() );
+			mesh.getNormalBuffer().put( new float[]{ normal.getU(), normal.getV(), normal.getZ()} );
 			
 			Vector3d<Float> newNormal = new Vector3d<Float>( 0.0f, 0.0f, 0.0f );
 			vert.setNormal( newNormal );

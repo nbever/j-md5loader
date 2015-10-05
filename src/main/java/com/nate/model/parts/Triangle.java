@@ -42,4 +42,10 @@ public class Triangle {
 	public void setVertices( Vector3d<Integer> vertices ){
 		this.vertices = vertices;
 	}
+	
+	@Override
+	public String toString() {
+
+		return getIndex() + ": " + getVertices().getU() + ", " + getVertices().getV() + ", " + getVertices().getZ();
+	}
 }
