@@ -191,13 +191,39 @@ public class MD5Loader {
 		getNextLine( fileIn );
 		
 		Frame<Float> baseFrame = new Frame<Float>();
-		baseFrame.initializeData( numFrames );
+		baseFrame.initializeData( numJoints );
 		
-		for ( int k = 0; k < numFrames; k++ ){
+		for ( int k = 0; k < numJoints; k++ ){
 			line = getNextLine( fileIn );
 			
-			FrameData<Float> data = FrameData.parseLine( line );
+			FrameData<Float> data = FrameData.parseBaseFrameLine( line );
 			baseFrame.getFrameData()[k] = data;
+		}
+		
+		anim.setBaseFrame( baseFrame );
+		
+		getNextLine( fileIn );
+		
+		anim.initializeFrames( numFrames );
+	
+		// now do all the other frames
+		for ( int l = 0; l < numFrames; l++ ){
+			
+			getNextLine( fileIn );
+			Frame<Float> frame = new Frame<Float>();
+			frame.initializeData( numJoints );
+			
+			for ( int m = 0; m < numJoints; m++ ){
+				
+				line = getNextLine( fileIn );
+				
+				FrameData<Float> data = FrameData.parseFrameLine( line );
+				frame.getFrameData()[m] = data;
+			}
+			
+			anim.getFrames()[l] = frame;
+			
+			// build frame skeleton
 		}
 		
 		return anim;
