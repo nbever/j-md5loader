@@ -5,15 +5,20 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.BitSet;
 
 import com.nate.model.parts.Bound;
 import com.nate.model.parts.Frame;
 import com.nate.model.parts.FrameData;
+import com.nate.model.parts.FrameSkeleton;
 import com.nate.model.parts.Joint;
 import com.nate.model.parts.JointInfo;
 import com.nate.model.parts.Mesh;
+import com.nate.model.parts.SkeletonJoint;
 import com.nate.model.parts.Triangle;
 import com.nate.model.parts.Weight;
+import com.nate.model.types.Vector3d;
+import com.nate.model.types.Vector4d;
 import com.nate.model.types.Vertice;
 
 public class MD5Loader {
@@ -205,7 +210,8 @@ public class MD5Loader {
 		getNextLine( fileIn );
 		
 		anim.initializeFrames( numFrames );
-	
+		anim.initializeSkeletons( numFrames );
+		
 		// now do all the other frames
 		for ( int l = 0; l < numFrames; l++ ){
 			
@@ -223,10 +229,85 @@ public class MD5Loader {
 			
 			anim.getFrames()[l] = frame;
 			
-			// build frame skeleton
+			FrameSkeleton<Float> frameSkels = buildSkeleton( anim.getJoints(), anim.getBaseFrame(), frame );
+			anim.getSkeletons()[l] = frameSkels;
 		}
 		
+		anim.setFrameDuration( 1.0f / (float)frameRate );
+		anim.setAnimationDuration( anim.getFrameDuration() * (float)numFrames );
+		anim.setAnimationTime( 0.0f );
+		
 		return anim;
+	}
+	
+	private FrameSkeleton<Float> buildSkeleton( JointInfo[] jointInfos, Frame<Float> baseFrame, Frame<Float> currentFrame ){
+		
+		FrameSkeleton<Float> skeleton = new FrameSkeleton<Float>( jointInfos.length );
+		
+		for ( int i = 0; i < jointInfos.length; i++ ){
+			
+			int j = 0;
+			
+			JointInfo joint = jointInfos[i];
+			SkeletonJoint<Float> skelJoint = new SkeletonJoint<Float>();
+			
+			skelJoint.setPosition( baseFrame.getFrameData()[i].getPosition() );
+			
+			Vector3d<Float> oQuat = new Vector3d<Float>( baseFrame.getFrameData()[i].getOrientation().getU(),
+														 baseFrame.getFrameData()[i].getOrientation().getV(),
+														 baseFrame.getFrameData()[i].getOrientation().getZ() );
+			
+			skelJoint.setOrientation( oQuat );
+			
+			skelJoint.setParent( joint.getParentIndex() );
+			
+			if ( (joint.getFlags() & 1) == 1 ){
+				skelJoint.getPosition().setU( currentFrame.getFrameData()[ joint.getStartIndex() + j ].getPosition().getU() );
+				j++;
+			}
+			
+			if ( (joint.getFlags() & 2) == 2 ){
+				skelJoint.getPosition().setU( currentFrame.getFrameData()[ joint.getStartIndex() + j ].getPosition().getV() );
+				j++;
+			}
+			
+			if ( (joint.getFlags() & 4) == 4 ){
+				skelJoint.getPosition().setU( currentFrame.getFrameData()[ joint.getStartIndex() + j ].getPosition().getZ() );
+				j++;
+			}
+			
+			if ( (joint.getFlags() & 8) == 8 ){
+				skelJoint.getOrientation().setU( currentFrame.getFrameData()[ joint.getStartIndex() + j ].getOrientation().getU() );
+				j++;
+			}
+			
+			if ( (joint.getFlags() & 16) == 16 ){
+				skelJoint.getOrientation().setU( currentFrame.getFrameData()[ joint.getStartIndex() + j ].getOrientation().getV() );
+				j++;
+			}
+			
+			if ( (joint.getFlags() & 32) == 32 ){
+				skelJoint.getOrientation().setU( currentFrame.getFrameData()[ joint.getStartIndex() + j ].getOrientation().getZ() );
+				j++;
+			}
+			
+			skelJoint.setW( Vector3d.computeW( skelJoint.getOrientation() ) );
+			
+			if ( skelJoint.getParent() >= 0 ){
+				SkeletonJoint<Float> parentJoint = skeleton.getSkeletonJoints()[ skelJoint.getParent() ];
+				Vector3d<Float> rotationalPosition = parentJoint.getOrientation().multiplyf( skelJoint.getPosition() );
+				
+				skelJoint.setPosition( parentJoint.getPosition().addf( rotationalPosition ) );
+				Vector3d<Float> newOrient = parentJoint.getOrientation().multiplyf( skelJoint.getOrientation() );
+				newOrient = newOrient.normalizef();
+				
+				skelJoint.setOrientation( newOrient );
+			}
+		
+			skeleton.getSkeletonJoints()[i] = skelJoint;
+		}
+		
+		return skeleton;
 	}
 	
 	private static String getNextLine( BufferedReader fileIn ) throws IOException{

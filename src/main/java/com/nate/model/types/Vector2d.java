@@ -17,4 +17,12 @@ public class Vector2d<T extends Number> {
 	public T getV(){
 		return v;
 	}
+	
+	public void setU( T u ){
+		this.u = u;
+	}
+	
+	public void setV( T v ){
+		this.v = v;
+	}
 }

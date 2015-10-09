@@ -13,6 +13,10 @@ public class Vector3d<T extends Number> extends Vector2d<T>{
 		return z;
 	}
 	
+	public void setZ( T z ){
+		this.z = z;
+	}
+	
 	private Vector3d<Float> makeFloat( Vector3d<T> vec ){
 		
 		Vector3d<Float> floatV = new Vector3d<Float>( vec.getU().floatValue(), vec.getV().floatValue(), vec.getZ().floatValue() );
@@ -94,5 +98,18 @@ public class Vector3d<T extends Number> extends Vector2d<T>{
 								   					this.getZ().floatValue() / lengthOfthistor );
 		
 		return vecn;
+	}
+	
+	public static Float computeW( Vector3d<Float> vec ){
+		Float w = 1.0f - (vec.getU()*vec.getU()) - (vec.getV()*vec.getV()) - (vec.getZ()*vec.getZ());
+		
+		if ( w < 0.0f ){
+			w = 0.0f;
+		}
+		else {
+			w = (float) (-1.0f * Math.sqrt( w ));
+		}
+		
+		return w;
 	}
 }
