@@ -1,13 +1,14 @@
 package com.nate.model.parts;
 
 import com.nate.model.types.Vector3d;
+import com.nate.model.types.Vector4d;
 
 public class SkeletonJoint<T extends Number> {
 
 	private Integer parent = -1;
 	private Vector3d<T> position;
-	private Vector3d<T> orientation;
-	private T w;
+	private Vector4d<T> orientation;
+//	private T w;
 	
 	public Integer getParent() {
 		return parent;
@@ -25,19 +26,19 @@ public class SkeletonJoint<T extends Number> {
 		this.position = position;
 	}
 	
-	public T getW(){
-		return w;
-	}
+//	public T getW(){
+//		return w;
+//	}
+//	
+//	public void setW( T w ){
+//		this.w = w;
+//	}
 	
-	public void setW( T w ){
-		this.w = w;
-	}
-	
-	public Vector3d<T> getOrientation(){
+	public Vector4d<T> getOrientation(){
 		return orientation;
 	}
 	
-	public void setOrientation( Vector3d<T> orientation ){
+	public void setOrientation( Vector4d<T> orientation ){
 		this.orientation = orientation;
 	}
 }

@@ -23,6 +23,18 @@ public class Vector3d<T extends Number> extends Vector2d<T>{
 		return floatV;
 	}
 	
+	public Vector3d<Float> lerpf( Vector3d<T> endVec, Float percentage ){
+		
+		Float x = getU().floatValue() + (( endVec.getU().floatValue() - getU().floatValue() ) * percentage );
+		Float y = getV().floatValue() + (( endVec.getV().floatValue() - getV().floatValue() ) * percentage );
+		Float z = getZ().floatValue() + (( endVec.getZ().floatValue() - getZ().floatValue() ) * percentage );
+		
+		Vector3d<Float> vec = new Vector3d<Float>( x, y, z );
+		vec = vec.normalizef();
+		
+		return vec;
+	}
+	
 	public Vector3d<Float> crossf( Vector3d<T> rightV ){
 		
 		Vector3d<Float> lfv = makeFloat( this );

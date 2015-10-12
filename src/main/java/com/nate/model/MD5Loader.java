@@ -2,10 +2,8 @@ package com.nate.model;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.BitSet;
 
 import com.nate.model.parts.Bound;
 import com.nate.model.parts.Frame;
@@ -105,7 +103,7 @@ public class MD5Loader {
 		// the verts
 		for ( int i = 0; i < numVerts; i++ ){
 			line = getNextLine( fileIn );
-			Vertice vert = Vertice.parseFloat( line );
+			Vertice<Float> vert = Vertice.parseFloat( line );
 			mesh.getVertices()[i] = vert;
 		}
 		
@@ -166,6 +164,8 @@ public class MD5Loader {
 		int frameRate = Integer.parseInt( line.substring( line.indexOf( " " ) + 1 ) );
 		line = getNextLine( fileIn );
 		int numAnimatedComponents = Integer.parseInt( line.substring( line.indexOf( " " ) + 1 ) );
+		
+		anim.setFrameRate( frameRate );
 		
 		// hierarchy (joint infos)
 		getNextLine( fileIn );
@@ -233,6 +233,9 @@ public class MD5Loader {
 			anim.getSkeletons()[l] = frameSkels;
 		}
 		
+		FrameSkeleton<Float> aSkel = new FrameSkeleton<Float>( anim.getSkeletons()[0] );
+		
+		anim.setAnimatedSkeleton( aSkel );
 		anim.setFrameDuration( 1.0f / (float)frameRate );
 		anim.setAnimationDuration( anim.getFrameDuration() * (float)numFrames );
 		anim.setAnimationTime( 0.0f );
@@ -253,9 +256,10 @@ public class MD5Loader {
 			
 			skelJoint.setPosition( baseFrame.getFrameData()[i].getPosition() );
 			
-			Vector3d<Float> oQuat = new Vector3d<Float>( baseFrame.getFrameData()[i].getOrientation().getU(),
+			Vector4d<Float> oQuat = new Vector4d<Float>( baseFrame.getFrameData()[i].getOrientation().getU(),
 														 baseFrame.getFrameData()[i].getOrientation().getV(),
-														 baseFrame.getFrameData()[i].getOrientation().getZ() );
+														 baseFrame.getFrameData()[i].getOrientation().getZ(),
+														 0.0f );
 			
 			skelJoint.setOrientation( oQuat );
 			
@@ -291,14 +295,14 @@ public class MD5Loader {
 				j++;
 			}
 			
-			skelJoint.setW( Vector3d.computeW( skelJoint.getOrientation() ) );
+			skelJoint.getOrientation().setW( Vector3d.computeW( skelJoint.getOrientation() ) );
 			
 			if ( skelJoint.getParent() >= 0 ){
 				SkeletonJoint<Float> parentJoint = skeleton.getSkeletonJoints()[ skelJoint.getParent() ];
 				Vector3d<Float> rotationalPosition = parentJoint.getOrientation().multiplyf( skelJoint.getPosition() );
 				
 				skelJoint.setPosition( parentJoint.getPosition().addf( rotationalPosition ) );
-				Vector3d<Float> newOrient = parentJoint.getOrientation().multiplyf( skelJoint.getOrientation() );
+				Vector4d<Float> newOrient = parentJoint.getOrientation().multiplyf( skelJoint.getOrientation() );
 				newOrient = newOrient.normalizef();
 				
 				skelJoint.setOrientation( newOrient );
