@@ -4,10 +4,18 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.Sys;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
+import org.md5reader2.md5.MD5Mesh;
+import org.md5reader2.md5.MD5Triangle;
+import org.md5reader2.md5.MD5Vertex;
+import org.md5reader2.parser.MD5AnimParser;
+import org.md5reader2.parser.MD5MeshParser;
+import org.md5reader2.parser.MD5Parser;
 
+import com.nate.model.MD5Animation;
 import com.nate.model.MD5Loader;
 import com.nate.model.MD5Model;
 
+import java.io.File;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -40,12 +48,14 @@ public class MainDisplay {
 		System.out.println("Hello LWJGL " + Sys.getVersion() + "!");
 		
 		URL url = MD5Model.class.getResource( "/boblampclean.md5mesh" );
+		URL animUrl = MD5Animation.class.getResource( "/boblampclean.md5anim" );
 //		URL url = MD5Model.class.getResource( "/hakuhoseamed.md5mesh" );
 		
 		
 		try {
 
 			model = MD5Loader.loadModel( url.getFile() );
+			model.setAnimation( MD5Loader.loadAnimation( animUrl.getFile() ) );
 			
 			init();
 			loop();
@@ -147,13 +157,13 @@ public class MainDisplay {
 	
 		glMatrixMode( GL_PROJECTION );
 		glLoadIdentity();
-		glOrtho( 0, 800, 0, 600, 0, -1000 );
+		glOrtho( 0, 800, 0, 600, 300, -100 );
 		glMatrixMode( GL_MODELVIEW );
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		
 		long time = Instant.now().toEpochMilli();
-		long msPerFrame = 1000 / 60;
-		long msSince = 0;
+		float msPerFrame = 1000 / 60;
+		float msSince = 0;
 
 		float rotateZ = 0.0f;
 		
@@ -186,6 +196,15 @@ public class MainDisplay {
 		coordB.flip();
 		indiceB.flip();
 		
+		URL url = MD5Model.class.getResource( "/fish/fish.md5mesh" );
+		URL animUrl = MD5Animation.class.getResource( "/fish/fish.md5anim" );
+		
+		MD5Parser meshParser = new MD5MeshParser();
+		org.md5reader2.md5.MD5Model jModel = meshParser.parseModel( url.getFile() );
+		
+		MD5Parser animParser = new MD5AnimParser( jModel );
+		org.md5reader2.md5.MD5Animation jAnim = animParser.parseAnimation( animUrl.getFile() );
+		
 		// Run the rendering loop until the user has attempted to close
 		// the window or has pressed the ESCAPE key.
 		while ( glfwWindowShouldClose(window) == GL_FALSE ) {
@@ -201,6 +220,13 @@ public class MainDisplay {
 				time = now;
 				msSince = 0;
 			}
+			
+//		    static ElapsedTime elapsedTime( 1/30.0f );
+//		    float fDeltaTime = elapsedTime.GetElapsedTime();
+//		    
+//		    g_Model.Update( fDeltaTime );
+			
+//			model.update( msSince );
 			
 			currentAngle += getTurnAmount();
 			currentAngle %= 360.0f;
@@ -223,8 +249,12 @@ public class MainDisplay {
 			
 			glPopMatrix();
 			
+//			glPushMatrix();
+//			model.render();
+//			glPopMatrix();
+			
 			glPushMatrix();
-			model.render();
+			renderJModel( jModel );
 			glPopMatrix();
 			
 			glfwSwapBuffers(window); // swap the color buffers
@@ -234,6 +264,43 @@ public class MainDisplay {
 			glfwPollEvents();
 			
 			
+		}
+		
+	}
+	
+	private void renderJModel( org.md5reader2.md5.MD5Model jModel ){
+		
+		
+		glTranslatef( 0.0f, 300.0f, 0.0f );
+		glScalef( 500.0f, 500.0f, 500.0f );
+		glRotatef( -90.0f, 1.0f, 0.0f, 0.0f );
+		
+		for ( MD5Mesh mesh : jModel.getMeshes() ){
+		
+			jModel.constructMesh( mesh );
+			
+			glBegin( GL_TRIANGLES );
+			
+				for ( int i = 0; i < mesh.getTriangles().length; i++ ){
+					
+					MD5Triangle tri = mesh.getTriangles()[i];
+					
+					MD5Vertex v1 = mesh.getVertices()[tri.getIndex()[0]];
+					MD5Vertex v2 = mesh.getVertices()[tri.getIndex()[1]];
+					MD5Vertex v3 = mesh.getVertices()[tri.getIndex()[2]];
+					
+					glVertex3f( v1.getPosition().getX(), v1.getPosition().getY(), v1.getPosition().getZ() );
+//					glNormal3f( v1.getNormal().getU(), v1.getNormal().getV(), v1.getNormal().getZ() );
+					
+					glVertex3f( v2.getPosition().getX(), v2.getPosition().getY(), v2.getPosition().getZ() );
+//					glNormal3f( v2.getNormal().getU(), v2.getNormal().getV(), v2.getNormal().getZ() );
+					
+					glVertex3f( v3.getPosition().getX(), v3.getPosition().getY(), v3.getPosition().getZ() );
+//					glNormal3f( v3.getNormal().getU(), v3.getNormal().getV(), v3.getNormal().getZ() );
+				}
+			
+			glEnd();
+		
 		}
 		
 	}

@@ -1,7 +1,9 @@
 package com.nate.model;
 
+import com.nate.model.parts.FrameSkeleton;
 import com.nate.model.parts.Joint;
 import com.nate.model.parts.Mesh;
+import com.nate.model.parts.SkeletonJoint;
 import com.nate.model.parts.Triangle;
 import com.nate.model.parts.Weight;
 import com.nate.model.types.Vector3d;
@@ -16,6 +18,7 @@ public class MD5Model {
 	private int version;
 	private String commandLine;
 	
+	private MD5Animation animation;
 	
 	public void initialize( int joints, int meshes ){
 		this.joints = new Joint[joints];
@@ -30,10 +33,6 @@ public class MD5Model {
 		glScalef( 5.0f, 5.0f, 5.0f);
 		glTranslatef( 0.0f, 25.0f, 50.0f );
 		glRotatef( -90.0f, 1.0f, 0.0f, 0.0f );
-
-		glEnableClientState( GL_VERTEX_ARRAY );
-		glEnableClientState( GL_NORMAL_ARRAY );
-//		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 		
 		for ( Mesh mesh : getMeshes() ){
 			
@@ -41,43 +40,15 @@ public class MD5Model {
 				continue;
 			}
 			
-			
-//			glBindTexture( GL_TEXTURE_2D, 0 );
-			glVertexPointer( 3, 0, mesh.getPositionBuffer() );
-			glNormalPointer( 0, mesh.getNormalBuffer() );
-			//glTexCoordPointer( 2, GL_FLOAT, mesh.getTextureBuffer() );
-			glDrawElements( GL_TRIANGLES, mesh.getIndexBuffer() );
-			
-//			glBegin( GL_TRIANGLES );
-//			
-//				for ( int i = 0; i < mesh.getTriangles().length; i++ ){
-//					
-//					Triangle tri = mesh.getTriangles()[i];
-//					Vector3d<Integer> verts = tri.getVertices();
-//					
-//					Vertice<Float> v1 = mesh.getVertices()[verts.getU()];
-//					Vertice<Float> v2 = mesh.getVertices()[verts.getV()];
-//					Vertice<Float> v3 = mesh.getVertices()[verts.getZ()];
-//					
-//					glVertex3f( v1.getPosition().getU(), v1.getPosition().getV(), v1.getPosition().getZ() );
-//					glNormal3f( v1.getNormal().getU(), v1.getNormal().getV(), v1.getNormal().getZ() );
-//					
-//					glVertex3f( v2.getPosition().getU(), v2.getPosition().getV(), v2.getPosition().getZ() );
-//					glNormal3f( v2.getNormal().getU(), v2.getNormal().getV(), v2.getNormal().getZ() );
-//					
-//					glVertex3f( v3.getPosition().getU(), v3.getPosition().getV(), v3.getPosition().getZ() );
-//					glNormal3f( v3.getNormal().getU(), v3.getNormal().getV(), v3.getNormal().getZ() );
-//				}
-//			
-//			glEnd();
-			
+			mesh.render();
 		}
 		
-		glDisableClientState( GL_VERTEX_ARRAY );
-		glDisableClientState( GL_NORMAL_ARRAY );
-		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+		if ( getAnimation() != null ){
+			getAnimation().render();
+		}
 		
 		glPopMatrix();
+
 	}
 	
 	public Joint[] getJoints() {
@@ -112,38 +83,65 @@ public class MD5Model {
 		this.commandLine = commandLine;
 	}
 	
-//	bool MD5Model::PrepareMesh( Mesh& mesh )
-//	{
-//	    mesh.m_PositionBuffer.clear();
-//	    mesh.m_Tex2DBuffer.clear();
-//	 
-//	    // Compute vertex positions
-//	    for ( unsigned int i = 0; i < mesh.m_Verts.size(); ++i )
-//	    {
-//	        glm::vec3 finalPos(0);
-//	        Vertex& vert = mesh.m_Verts[i];
-//	 
-//	        vert.m_Pos = glm::vec3(0);
-//	        vert.m_Normal = glm::vec3(0);
-//	 
-//	        // Sum the position of the weights
-//	        for ( int j = 0; j < vert.m_WeightCount; ++j )
-//	        {
-//	            Weight& weight = mesh.m_Weights[vert.m_StartWeight + j];
-//	            Joint& joint = m_Joints[weight.m_JointID];
-//	 
-//	            // Convert the weight position from Joint local space to object space
-//	            glm::vec3 rotPos = joint.m_Orient * weight.m_Pos;
-//	 
-//	            vert.m_Pos += ( joint.m_Pos + rotPos ) * weight.m_Bias;
-//	        }
-//	 
-//	        mesh.m_PositionBuffer.push_back(vert.m_Pos);
-//	        mesh.m_Tex2DBuffer.push_back(vert.m_Tex0);
-//	    }
-//	 
-//	    return true;
-//	}
+	public MD5Animation getAnimation(){
+		return animation;
+	}
+	
+	public void setAnimation( MD5Animation animation ){
+		this.animation = animation;
+	}
+	
+	public void update( Float deltaTime ){
+		
+		if ( getAnimation() != null ){
+			
+			getAnimation().update( deltaTime );
+			FrameSkeleton<Float> skeleton = getAnimation().getAnimatedSkeleton();
+			
+			for ( int i = 0; i < getMeshes().length; i++ ){
+				prepareMesh( getMeshes()[i], skeleton );
+			}
+		}
+	}
+	
+	public void prepareMesh( Mesh mesh, FrameSkeleton skeleton ){
+		
+		for ( int i = 0; i < mesh.getVertices().length; i++ ){
+			Vertice<Float> vert = mesh.getVertices()[i];
+			
+			Vector3d<Float> position = new Vector3d<Float>( 0.0f, 0.0f, 0.0f );
+			Vector3d<Float> normal = new Vector3d<Float>( 0.0f, 0.0f, 0.0f );
+			
+			for ( int j = 0; j < vert.getWeightCount(); j++ ){
+				
+				Weight<Float> weight = mesh.getWeights()[vert.getStartingWeight() + j];
+				SkeletonJoint<Float> joint = skeleton.getSkeletonJoints()[weight.getJointIndex()];
+				Vector3d<Float> rotation = joint.getOrientation().multiplyf( weight.getPosition() );
+				
+				Vector3d<Float> sumVec = joint.getPosition().addf( rotation );
+				position = position.addf( sumVec.scalarf( weight.getWeightBias() ) );
+				
+				Vector3d<Float> prodVec = joint.getOrientation().multiplyf( vert.getNormal() );
+				normal = normal.addf( prodVec.scalarf( weight.getWeightBias() ) );
+				
+				// put them in the right spot in the position buffer.
+				try {
+					mesh.getPositionBuffer().put( (i*3), position.getU() );
+					mesh.getPositionBuffer().put( (i*3) + 1, position.getV() );
+					mesh.getPositionBuffer().put(  (i*3) + 2, position.getZ() );
+					
+					mesh.getNormalBuffer().put( (i*3), normal.getU() );
+					mesh.getNormalBuffer().put( (i*3) + 1, normal.getV() );
+					mesh.getNormalBuffer().put( (i*3) + 2, normal.getZ() );
+				}
+				catch( IndexOutOfBoundsException ie ){
+					System.out.println( "i: " + i + ", size: " + mesh.getPositionBuffer().capacity() + ", position: " + mesh.getPositionBuffer().position() + ", limit: " + mesh.getPositionBuffer().limit() );
+					ie.printStackTrace();
+					System.exit( 1 );
+				}
+			}
+		}
+	}
 	
 	public void prepareMesh( Mesh mesh ){
 		

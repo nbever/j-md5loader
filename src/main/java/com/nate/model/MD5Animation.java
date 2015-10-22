@@ -1,5 +1,6 @@
 package com.nate.model;
 
+import com.nate.model.parts.BaseFrame;
 import com.nate.model.parts.Bound;
 import com.nate.model.parts.Frame;
 import com.nate.model.parts.FrameSkeleton;
@@ -8,13 +9,15 @@ import com.nate.model.parts.SkeletonJoint;
 import com.nate.model.types.Vector3d;
 import com.nate.model.types.Vector4d;
 
+import static org.lwjgl.opengl.GL11.*;
+
 public class MD5Animation {
 
 	private int version;
 	
 	private JointInfo[] joints;
 	private Bound<Float>[] bounds;
-	private Frame<Float> baseFrame;
+	private BaseFrame<Float> baseFrame;
 	private Frame<Float>[] frames;
 	private FrameSkeleton<Float>[] skeletons;
 	private FrameSkeleton<Float> animatedSkeleton;
@@ -24,6 +27,57 @@ public class MD5Animation {
 	private Float animationTime;
 	
 	private Integer frameRate;
+	
+	public void render(){
+	    glPointSize( 5.0f );
+	    glColor3f( 1.0f, 0.0f, 0.0f );
+
+	    glPushAttrib( GL_ENABLE_BIT );
+
+	    glDisable(GL_LIGHTING );
+	    glDisable( GL_DEPTH_TEST );
+
+	    SkeletonJoint<Float>[] joints = getAnimatedSkeleton().getSkeletonJoints();
+//	    const SkeletonJointList& joints = m_AnimatedSkeleton.m_Joints;
+
+	    // Draw the joint positions
+	    glBegin( GL_POINTS );
+	    {
+	        for ( int i = 0; i < joints.length; i++ )
+	        {
+	            glVertex3f( joints[i].getPosition().getU(),
+	            		    joints[i].getPosition().getV(),
+	            		    joints[i].getPosition().getZ() );
+	        }
+	    }
+	    glEnd();
+
+	    // Draw the bones
+	    glColor3f( 0.0f, 1.0f, 0.0f );
+	    glBegin( GL_LINES );
+	    {
+	        for ( int j = 0; j < joints.length; j++ )
+	        {
+	            SkeletonJoint<Float> joint = joints[j];
+	            
+	            if ( joint.getParent() != -1 )
+	            {
+	                SkeletonJoint<Float> j1 = joints[joint.getParent()];
+	                
+	                glVertex3f( joint.getPosition().getU(), 
+	                			joint.getPosition().getV(), 
+	                			joint.getPosition().getZ() );
+	                
+	                glVertex3f( j1.getPosition().getU(), 
+                				j1.getPosition().getV(), 
+                				j1.getPosition().getZ() );
+	            }
+	        }
+	    }
+	    glEnd();
+
+	    glPopAttrib();
+	}
 	
 	public void initializeJointInfo( int num ){
 		
@@ -128,11 +182,11 @@ public class MD5Animation {
 		return bounds;
 	}
 	
-	public Frame<Float> getBaseFrame(){
+	public BaseFrame<Float> getBaseFrame(){
 		return baseFrame;
 	}
 	
-	public void setBaseFrame( Frame<Float> frame ){
+	public void setBaseFrame( BaseFrame<Float> frame ){
 		baseFrame = frame;
 	}
 	

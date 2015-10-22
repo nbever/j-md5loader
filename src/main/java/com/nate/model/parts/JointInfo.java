@@ -13,7 +13,7 @@ public class JointInfo {
 		
 		String[] tokens = line.split( "[ ,\t]" );
 		
-		if ( tokens.length != 4 ){
+		if ( tokens.length < 4 ){
 			throw new Exception( "Invalid line format - there must be 4 items." );
 		}
 		

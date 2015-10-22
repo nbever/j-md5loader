@@ -2,14 +2,14 @@ package com.nate.model.parts;
 
 import com.nate.model.types.Vector3d;
 
-public class FrameData<T extends Number> {
+public class BaseFrameData<T extends Number> {
 
 	private Vector3d<T> position;
 	private Vector3d<T> orientation;
 	
-	public static FrameData<Float> parseBaseFrameLine( String line ) throws Exception{
+	public static BaseFrameData<Float> parseBaseFrameLine( String line ) throws Exception{
 		
-		FrameData<Float> data = new FrameData<Float>();
+		BaseFrameData<Float> data = new BaseFrameData<Float>();
 		
 		String[] tokens = line.split( "[ ,\t]" );
 		
@@ -34,9 +34,9 @@ public class FrameData<T extends Number> {
 		return data;
 	}
 	
-	public static FrameData<Float> parseFrameLine( String line ) throws Exception {
+	public static BaseFrameData<Float> parseFrameLine( String line ) throws Exception {
 		
-		FrameData<Float> data = new FrameData<Float>();
+		BaseFrameData<Float> data = new BaseFrameData<Float>();
 		
 		String[] tokens = line.split( "[ ,\t]" );
 		

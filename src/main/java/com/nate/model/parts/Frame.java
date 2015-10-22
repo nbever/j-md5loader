@@ -3,12 +3,13 @@ package com.nate.model.parts;
 public class Frame<T extends Number> {
 
 	private Integer index;
-	private FrameData<T>[] data;
+//	private FrameData<T>[] data;
+	private Float[] data;
 	
 	@SuppressWarnings("unchecked")
 	public void initializeData( int num ){
 		
-		data = new FrameData[num];
+		data = new Float[num];
 	}
 	
 	public Integer getIndex(){
@@ -19,7 +20,14 @@ public class Frame<T extends Number> {
 		index = anIndex;
 	}
 	
-	public FrameData<T>[] getFrameData(){
+	public Float[] getFrameData(){
 		return data;
+	}
+	
+	public void addFrameData( Float[] floats, int startIndex ){
+		
+		for ( int i = 0; i < floats.length; i++ ){
+			getFrameData()[i + startIndex] = floats[i];
+		}
 	}
 }

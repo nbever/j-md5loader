@@ -17,7 +17,7 @@ public class Vector3d<T extends Number> extends Vector2d<T>{
 		this.z = z;
 	}
 	
-	private Vector3d<Float> makeFloat( Vector3d<T> vec ){
+	protected Vector3d<Float> makeFloat( Vector3d<T> vec ){
 		
 		Vector3d<Float> floatV = new Vector3d<Float>( vec.getU().floatValue(), vec.getV().floatValue(), vec.getZ().floatValue() );
 		return floatV;

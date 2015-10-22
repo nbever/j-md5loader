@@ -16,6 +16,10 @@
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
+		<repository>
+		  <id>jMonkeyEngine-repo</id>
+		  <url>http://updates.jmonkeyengine.org/maven/</url>
+		</repository>
 	</repositories>
 
 	<properties>
@@ -52,7 +56,11 @@
 			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
-
+        <dependency>
+            <groupId>com.jme3</groupId>
+            <artifactId>jme3-core</artifactId>
+            <version>3.0.10</version>
+        </dependency>
 	</dependencies>
 
 </project>
