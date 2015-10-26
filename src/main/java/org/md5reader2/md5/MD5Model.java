@@ -167,8 +167,8 @@ public class MD5Model {
 			for (int j = 0; j < 3; j++, k++) {
 				mesh.getVertexIndices()[k] = mesh.getTriangles()[i].getIndex()[j];
 //				System.out.println(mesh.getTriangles()[i].getIndex()[0]);
-				mesh.getVertexIndices()[k] = mesh.getTriangles()[i].getIndex()[j];
-				mesh.getVertexIndices()[k] = mesh.getTriangles()[i].getIndex()[j];
+//				mesh.getVertexIndices()[k] = mesh.getTriangles()[i].getIndex()[j];
+//				mesh.getVertexIndices()[k] = mesh.getTriangles()[i].getIndex()[j];
 			}
 		}
 		
