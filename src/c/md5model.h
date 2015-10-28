@@ -38,7 +38,7 @@ typedef float vec3_t[3];
 typedef float quat4_t[4];
 
 enum {
-  X, Y, Z, W
+  XX, YY, ZZ, WW
 };
 
 /* Joint */

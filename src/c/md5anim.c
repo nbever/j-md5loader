@@ -30,7 +30,7 @@
  * gcc -Wall -ansi -lGL -lGLU -lglut md5anim.c md5anim.c -o md5model
  */
 
-#include <GL/glut.h>
+#include <GLUT/glut.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +62,7 @@ struct baseframe_joint_t
 float
 Quat_dotProduct (const quat4_t qa, const quat4_t qb)
 {
-  return ((qa[X] * qb[X]) + (qa[Y] * qb[Y]) + (qa[Z] * qb[Z]) + (qa[W] * qb[W]));
+  return ((qa[XX] * qb[XX]) + (qa[YY] * qb[YY]) + (qa[ZZ] * qb[ZZ]) + (qa[WW] * qb[WW]));
 }
 
 void
@@ -88,10 +88,10 @@ Quat_slerp (const quat4_t qa, const quat4_t qb, float t, quat4_t out)
      represent the same rotation, but may produce
      different slerp.  We chose q or -q to rotate using
      the acute angle. */
-  float q1w = qb[W];
-  float q1x = qb[X];
-  float q1y = qb[Y];
-  float q1z = qb[Z];
+  float q1w = qb[WW];
+  float q1x = qb[XX];
+  float q1y = qb[YY];
+  float q1z = qb[ZZ];
 
   if (cosOmega < 0.0f)
     {
@@ -136,10 +136,10 @@ Quat_slerp (const quat4_t qa, const quat4_t qb, float t, quat4_t out)
     }
 
   /* Interpolate and return new quaternion */
-  out[W] = (k0 * qa[3]) + (k1 * q1w);
-  out[X] = (k0 * qa[0]) + (k1 * q1x);
-  out[Y] = (k0 * qa[1]) + (k1 * q1y);
-  out[Z] = (k0 * qa[2]) + (k1 * q1z);
+  out[WW] = (k0 * qa[3]) + (k1 * q1w);
+  out[XX] = (k0 * qa[0]) + (k1 * q1x);
+  out[YY] = (k0 * qa[1]) + (k1 * q1y);
+  out[ZZ] = (k0 * qa[2]) + (k1 * q1z);
 }
 
 /**

@@ -1,26 +1,13 @@
 package com.nate.display;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.Sys;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
-import org.md5reader2.md5.MD5Mesh;
-import org.md5reader2.md5.MD5Triangle;
-import org.md5reader2.md5.MD5Vertex;
-import org.md5reader2.parser.MD5AnimParser;
-import org.md5reader2.parser.MD5MeshParser;
-import org.md5reader2.parser.MD5Parser;
 
-import com.nate.model.MD5Animation;
-import com.nate.model.MD5Loader;
+import com.nate.model.MD5Mesh;
 import com.nate.model.MD5Model;
-
-import java.io.File;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.time.Instant;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -39,24 +26,15 @@ public class MainDisplay {
 	// The window handle
 	private long window;
 	
-	private MD5Model model;
-	
 	private Float currentAngle = 0.0f;
 	private Float turnAmount = 0.0f;
 	
 	public void run() {
 		System.out.println("Hello LWJGL " + Sys.getVersion() + "!");
 		
-		URL url = MD5Model.class.getResource( "/boblampclean.md5mesh" );
-		URL animUrl = MD5Animation.class.getResource( "/boblampclean.md5anim" );
-//		URL url = MD5Model.class.getResource( "/hakuhoseamed.md5mesh" );
-		
 		
 		try {
-
-			model = MD5Loader.loadModel( url.getFile() );
-			model.setAnimation( MD5Loader.loadAnimation( animUrl.getFile() ) );
-			
+		
 			init();
 			loop();
 
@@ -163,21 +141,44 @@ public class MainDisplay {
 		
 		glMatrixMode( GL_MODELVIEW );
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+		MD5Model newModel = null;
 		
-		URL url = MD5Model.class.getResource( "/boblampclean.md5mesh" );
-		URL animUrl = MD5Animation.class.getResource( "/boblampclean.md5anim" );
-		
-		MD5Parser meshParser = new MD5MeshParser();
-		org.md5reader2.md5.MD5Model jModel = meshParser.parseModel( url.getFile() );
-		
-		MD5Parser animParser = new MD5AnimParser( jModel );
-		org.md5reader2.md5.MD5Animation jAnim = animParser.parseAnimation( animUrl.getFile() );
+		try {
+			URL newUrl = MD5Model.class.getResource( "/bope/bopeabaixa.md5mesh" );
+			 newModel = MD5Model.loadModel( newUrl.getFile() );
+			
+			for ( MD5Mesh mesh : newModel.getMeshes() ){
+				newModel.prepareModel( mesh, newModel.getBaseSkeleton() );
+				mesh.getIndexArray().flip();
+				mesh.getVertexArray().flip();
+			}
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		// Run the rendering loop until the user has attempted to close
 		// the window or has pressed the ESCAPE key.
 		while ( glfwWindowShouldClose(window) == GL_FALSE ) {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
+			glPushMatrix();
+			
+			glEnableClientState( GL_VERTEX_ARRAY );
+			glColor3f( 1.0f, 1.0f, 0.2f );
+			glScalef( 0.05f, 0.05f, 0.05f );
+			glRotatef( -90.0f, 1.0f, 0.0f, 0.0f );
+			
+			for ( MD5Mesh mesh : newModel.getMeshes() ){
+				glVertexPointer( 3, 0, mesh.getVertexArray() );
+				glDrawElements( GL_TRIANGLES, mesh.getIndexArray() );
+			}
+			
+			glDisableClientState( GL_VERTEX_ARRAY );
+			
+			glPopMatrix();
 			
 			glPushMatrix();
 			
@@ -186,27 +187,10 @@ public class MainDisplay {
 				glBegin( GL_POINTS );
 					glVertex3f( 0.0f, 0.0f, 0.0f );
 				glEnd();
-			
-//			glScalef( 0.9f, 0.9f, 0.9f );
-//			glBegin( GL_QUADS );
-//				glColor3f( 1.0f, 0.0f, 0.0f );
-//				glVertex3f( -1.0f, 1.0f, 0.0f );
-//				glColor3f( 0.0f, 1.0f, 0.0f );
-//				glVertex3f( 1.0f, 1.0f, 0.0f );
-//				glColor3f( 0.0f, 0.0f, 1.0f );
-//				glVertex3f( 1.0f, -1.0f, 0.0f );
-//				glColor3f( 1.0f, 1.0f, 1.0f );
-//				glVertex3f( -1.0f, -1.0f, 0.0f );
-//			glEnd();
+
 			
 			glPopMatrix();
-			
-			glPushMatrix();
-				glScalef( 0.01f, 0.01f, 0.01f );
-				glRotatef( -90.0f, 1.0f, 0.0f, 0.0f );
-				glColor3f( 1.0f, 0.0f, 0.0f );
-				renderJModel( jModel );
-			glPopMatrix();
+
 			
 			glfwSwapBuffers(window); // swap the color buffers
 
@@ -215,38 +199,6 @@ public class MainDisplay {
 			glfwPollEvents();
 			
 			
-		}
-		
-	}
-	
-	private void renderJModel( org.md5reader2.md5.MD5Model jModel ){
-		
-		for ( MD5Mesh mesh : jModel.getMeshes() ){
-		
-			jModel.constructMesh( mesh );
-			
-			glBegin( GL_TRIANGLES );
-			
-				for ( int i = 0; i < mesh.getTriangles().length; i++ ){
-					
-					MD5Triangle tri = mesh.getTriangles()[i];
-					
-					MD5Vertex v1 = mesh.getVertices()[tri.getIndex()[0]];
-					MD5Vertex v2 = mesh.getVertices()[tri.getIndex()[1]];
-					MD5Vertex v3 = mesh.getVertices()[tri.getIndex()[2]];
-
-					glVertex3f( v1.getPosition().getX(), v1.getPosition().getY(), v1.getPosition().getZ() );
-//					glNormal3f( v1.getNormal().getU(), v1.getNormal().getV(), v1.getNormal().getZ() );
-					
-					glVertex3f( v2.getPosition().getX(), v2.getPosition().getY(), v2.getPosition().getZ() );
-//					glNormal3f( v2.getNormal().getU(), v2.getNormal().getV(), v2.getNormal().getZ() );
-					
-					glVertex3f( v3.getPosition().getX(), v3.getPosition().getY(), v3.getPosition().getZ() );
-//					glNormal3f( v3.getNormal().getU(), v3.getNormal().getV(), v3.getNormal().getZ() );
-				}
-			
-			glEnd();
-		
 		}
 		
 	}

@@ -30,7 +30,7 @@
  * gcc -Wall -ansi -lGL -lGLU -lglut md5anim.c md5anim.c -o md5model
  */
 
-#include <GL/glut.h>
+#include <GLUT/glut.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,20 +62,20 @@ GLuint *vertexIndices = NULL;
 void
 Quat_computeW (quat4_t q)
 {
-  float t = 1.0f - (q[X] * q[X]) - (q[Y] * q[Y]) - (q[Z] * q[Z]);
+  float t = 1.0f - (q[XX] * q[XX]) - (q[YY] * q[YY]) - (q[ZZ] * q[ZZ]);
 
   if (t < 0.0f)
-    q[W] = 0.0f;
+    q[WW] = 0.0f;
   else
-    q[W] = -sqrt (t);
+    q[WW] = -sqrt (t);
 }
 
 void
 Quat_normalize (quat4_t q)
 {
   /* compute magnitude of the quaternion */
-  float mag = sqrt ((q[X] * q[X]) + (q[Y] * q[Y])
-		    + (q[Z] * q[Z]) + (q[W] * q[W]));
+  float mag = sqrt ((q[XX] * q[XX]) + (q[YY] * q[YY])
+		    + (q[ZZ] * q[ZZ]) + (q[WW] * q[WW]));
 
   /* check for bogus length, to protect against divide by zero */
   if (mag > 0.0f)
@@ -83,29 +83,29 @@ Quat_normalize (quat4_t q)
       /* normalize it */
       float oneOverMag = 1.0f / mag;
 
-      q[X] *= oneOverMag;
-      q[Y] *= oneOverMag;
-      q[Z] *= oneOverMag;
-      q[W] *= oneOverMag;
+      q[XX] *= oneOverMag;
+      q[YY] *= oneOverMag;
+      q[ZZ] *= oneOverMag;
+      q[WW] *= oneOverMag;
     }
 }
 
 void
 Quat_multQuat (const quat4_t qa, const quat4_t qb, quat4_t out)
 {
-  out[W] = (qa[W] * qb[W]) - (qa[X] * qb[X]) - (qa[Y] * qb[Y]) - (qa[Z] * qb[Z]);
-  out[X] = (qa[X] * qb[W]) + (qa[W] * qb[X]) + (qa[Y] * qb[Z]) - (qa[Z] * qb[Y]);
-  out[Y] = (qa[Y] * qb[W]) + (qa[W] * qb[Y]) + (qa[Z] * qb[X]) - (qa[X] * qb[Z]);
-  out[Z] = (qa[Z] * qb[W]) + (qa[W] * qb[Z]) + (qa[X] * qb[Y]) - (qa[Y] * qb[X]);
+  out[WW] = (qa[WW] * qb[WW]) - (qa[XX] * qb[XX]) - (qa[YY] * qb[YY]) - (qa[ZZ] * qb[ZZ]);
+  out[XX] = (qa[XX] * qb[WW]) + (qa[WW] * qb[XX]) + (qa[YY] * qb[ZZ]) - (qa[ZZ] * qb[YY]);
+  out[YY] = (qa[YY] * qb[WW]) + (qa[WW] * qb[YY]) + (qa[ZZ] * qb[XX]) - (qa[XX] * qb[ZZ]);
+  out[ZZ] = (qa[ZZ] * qb[WW]) + (qa[WW] * qb[ZZ]) + (qa[XX] * qb[YY]) - (qa[YY] * qb[XX]);
 }
 
 void
 Quat_multVec (const quat4_t q, const vec3_t v, quat4_t out)
 {
-  out[W] = - (q[X] * v[X]) - (q[Y] * v[Y]) - (q[Z] * v[Z]);
-  out[X] =   (q[W] * v[X]) + (q[Y] * v[Z]) - (q[Z] * v[Y]);
-  out[Y] =   (q[W] * v[Y]) + (q[Z] * v[X]) - (q[X] * v[Z]);
-  out[Z] =   (q[W] * v[Z]) + (q[X] * v[Y]) - (q[Y] * v[X]);
+  out[WW] = - (q[XX] * v[XX]) - (q[YY] * v[YY]) - (q[ZZ] * v[ZZ]);
+  out[XX] =   (q[WW] * v[XX]) + (q[YY] * v[ZZ]) - (q[ZZ] * v[YY]);
+  out[YY] =   (q[WW] * v[YY]) + (q[ZZ] * v[XX]) - (q[XX] * v[ZZ]);
+  out[ZZ] =   (q[WW] * v[ZZ]) + (q[XX] * v[YY]) - (q[YY] * v[XX]);
 }
 
 void
@@ -113,17 +113,19 @@ Quat_rotatePoint (const quat4_t q, const vec3_t in, vec3_t out)
 {
   quat4_t tmp, inv, final;
 
-  inv[X] = -q[X]; inv[Y] = -q[Y];
-  inv[Z] = -q[Z]; inv[W] =  q[W];
+  inv[XX] = -q[XX]; inv[YY] = -q[YY];
+  inv[ZZ] = -q[ZZ]; inv[WW] =  q[WW];
 
   Quat_normalize (inv);
-
+    
   Quat_multVec (q, in, tmp);
   Quat_multQuat (tmp, inv, final);
 
-  out[X] = final[X];
-  out[Y] = final[Y];
-  out[Z] = final[Z];
+  printf( "Mult 2: %f, %f, %f, %f\n", final[XX], final[YY], final[ZZ], final[WW] );
+    
+  out[XX] = final[XX];
+  out[YY] = final[YY];
+  out[ZZ] = final[ZZ];
 }
 
 /**
@@ -353,13 +355,15 @@ PrepareMesh (const struct md5_mesh_t *mesh,
 	     const struct md5_joint_t *skeleton)
 
 {
+  printf( "Starting! \n" );
+    
   int i, j, k;
 
   /* Setup vertex indices */
   for (k = 0, i = 0; i < mesh->num_tris; ++i)
     {
       for (j = 0; j < 3; ++j, ++k)
-	vertexIndices[k] = mesh->triangles[i].index[j];
+          vertexIndices[k] = mesh->triangles[i].index[j];
     }
 
   /* Setup vertices */
@@ -388,7 +392,11 @@ PrepareMesh (const struct md5_mesh_t *mesh,
       vertexArray[i][0] = finalVertex[0];
       vertexArray[i][1] = finalVertex[1];
       vertexArray[i][2] = finalVertex[2];
+        
+//        printf( "%i: %f, %f, %f\n", i, finalVertex[0], finalVertex[1], finalVertex[2]);
     }
+    
+    printf( "Finished \n" );
 }
 
 void
@@ -457,7 +465,7 @@ init (const char *filename, const char *animfile)
   /* Load MD5 model file */
   if (!ReadMD5Model (filename, &md5file))
     exit (EXIT_FAILURE);
-
+    
   AllocVertexArrays ();
 
   /* Load MD5 animation file */
@@ -567,6 +575,8 @@ display ()
   glColor3f (1.0f, 1.0f, 1.0f);
 
   glEnableClientState (GL_VERTEX_ARRAY);
+//    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+//    glScalef(5.0f, 5.0f, 5.0f);
 
   /* Draw each mesh of the model */
   for (i = 0; i < md5file.num_meshes; ++i)

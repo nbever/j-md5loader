@@ -70,7 +70,6 @@ joints {
 }
 
 mesh {
-	// meshes: marinebodymesh
 	shader "models/characters/male_npc/marine/marine"
 
 	numverts 961
