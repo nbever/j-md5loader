@@ -4,10 +4,15 @@ import org.lwjgl.Sys;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 
+import com.nate.model.MD5Animation;
+import com.nate.model.MD5AnimationInfo;
+import com.nate.model.MD5Joint;
 import com.nate.model.MD5Mesh;
 import com.nate.model.MD5Model;
+
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -143,35 +148,69 @@ public class MainDisplay {
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 		MD5Model newModel = null;
+		MD5Animation anim = null;
 		
 		try {
-			URL newUrl = MD5Model.class.getResource( "/bope/bopeabaixa.md5mesh" );
-			 newModel = MD5Model.loadModel( newUrl.getFile() );
+			URL newUrl = MD5Model.class.getResource( "/boblampclean.md5mesh" );
+			newModel = MD5Model.loadModel( newUrl.getFile() );
 			
-			for ( MD5Mesh mesh : newModel.getMeshes() ){
-				newModel.prepareModel( mesh, newModel.getBaseSkeleton() );
-				mesh.getIndexArray().flip();
-				mesh.getVertexArray().flip();
-			}
-			
+			URL animUrl = MD5Model.class.getResource( "/boblampclean.md5anim" );
+			anim = MD5Animation.loadAnimation( animUrl.getFile() );
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
+		MD5AnimationInfo animInfo = new MD5AnimationInfo();
+		animInfo.setCurrentFrame( 0 );
+		animInfo.setNextFrame( 1 );
+		animInfo.setMaxTime( 1.0 / (double)anim.getFrameRate() );
+		
+		MD5Joint[] skeleton = newModel.getBaseSkeleton();
+		
+		long currentTime = 0;
+		long lastTime = 0;
+		
 		// Run the rendering loop until the user has attempted to close
 		// the window or has pressed the ESCAPE key.
 		while ( glfwWindowShouldClose(window) == GL_FALSE ) {
+			
+//			advanceAnimation( animInfo );
+			lastTime = currentTime;
+			currentTime = Instant.now().toEpochMilli() / anim.getFrameRate();
+			
+			if ( lastTime == 0 ){
+				lastTime = currentTime;
+			}
+			
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
 			glPushMatrix();
 			
 			glEnableClientState( GL_VERTEX_ARRAY );
 			glColor3f( 1.0f, 1.0f, 0.2f );
-			glScalef( 0.05f, 0.05f, 0.05f );
+			glScalef( 0.01f, 0.01f, 0.01f );
 			glRotatef( -90.0f, 1.0f, 0.0f, 0.0f );
 			
+			if ( anim != null ){
+				
+				anim.advanceAnimation( animInfo, currentTime - lastTime );
+				skeleton = MD5Animation.interpolateSkeletons( anim.getSkeletonFrames()[animInfo.getCurrentFrame()], 
+												   anim.getSkeletonFrames()[animInfo.getNextFrame()], 
+												   anim.getNumberOfJoints(), 
+												   (float)(animInfo.getLastTime() * anim.getFrameRate()) );
+			}
+			else {
+				skeleton = newModel.getBaseSkeleton();
+			}
+			
 			for ( MD5Mesh mesh : newModel.getMeshes() ){
+				
+				newModel.prepareModel( mesh, skeleton );
+				mesh.getIndexArray().flip();
+				mesh.getVertexArray().flip();
+				
 				glVertexPointer( 3, 0, mesh.getVertexArray() );
 				glDrawElements( GL_TRIANGLES, mesh.getIndexArray() );
 			}

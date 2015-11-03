@@ -59,19 +59,6 @@ public class Quaternarion {
 	}
 	
 	public static Vector3f rotatePoint( Quaternarion orientation, Vector3f position ){
-//		  quat4_t tmp, inv, final;
-//
-//		  inv[X] = -q[X]; inv[Y] = -q[Y];
-//		  inv[Z] = -q[Z]; inv[W] =  q[W];
-//
-//		  Quat_normalize (inv);
-//
-//		  Quat_multVec (q, in, tmp);
-//		  Quat_multQuat (tmp, inv, final);
-//
-//		  out[X] = final[X];
-//		  out[Y] = final[Y];
-//		  out[Z] = final[Z];
 		
 		Quaternarion inverse = new Quaternarion();
 		inverse.setX( -1.0f * orientation.getX() );
@@ -110,14 +97,7 @@ public class Quaternarion {
 	}
 
 	public static Quaternarion multiply( Quaternarion qa, Quaternarion qb ){
-//	void
-//	Quat_multQuat (const quat4_t qa, const quat4_t qb, quat4_t out)
-//	{
-//	  out[W] = (qa[W] * qb[W]) - (qa[X] * qb[X]) - (qa[Y] * qb[Y]) - (qa[Z] * qb[Z]);
-//	  out[X] = (qa[X] * qb[W]) + (qa[W] * qb[X]) + (qa[Y] * qb[Z]) - (qa[Z] * qb[Y]);
-//	  out[Y] = (qa[Y] * qb[W]) + (qa[W] * qb[Y]) + (qa[Z] * qb[X]) - (qa[X] * qb[Z]);
-//	  out[Z] = (qa[Z] * qb[W]) + (qa[W] * qb[Z]) + (qa[X] * qb[Y]) - (qa[Y] * qb[X]);
-//	}
+
 		float w = ( qa.getW() * qb.getW() ) - ( qa.getX() * qb.getX() ) - ( qa.getY() * qb.getY() ) - ( qa.getZ() * qb.getZ() );
 		float x = ( qa.getX() * qb.getW() ) + ( qa.getW() * qb.getX() ) + ( qa.getY() * qb.getZ() ) - ( qa.getZ() * qb.getY() );
 		float y = ( qa.getY() * qb.getW() ) + ( qa.getW() * qb.getY() ) + ( qa.getZ() * qb.getX() ) - ( qa.getX() * qb.getZ() );
@@ -129,15 +109,6 @@ public class Quaternarion {
 	}
 	
 	public static Quaternarion multiply( Quaternarion q, Vector3f v ){
-//
-//	void
-//	Quat_multVec (const quat4_t q, const vec3_t v, quat4_t out)
-//	{
-//	  out[W] = - (q[X] * v[X]) - (q[Y] * v[Y]) - (q[Z] * v[Z]);
-//	  out[X] =   (q[W] * v[X]) + (q[Y] * v[Z]) - (q[Z] * v[Y]);
-//	  out[Y] =   (q[W] * v[Y]) + (q[Z] * v[X]) - (q[X] * v[Z]);
-//	  out[Z] =   (q[W] * v[Z]) + (q[X] * v[Y]) - (q[Y] * v[X]);
-//	}
 		
 		float w = -1.0f * ( q.getX() * v.getX() ) - ( q.getY() * v.getY() ) - ( q.getZ() * v.getZ() );
 		float x = ( q.getW() * v.getX() ) + ( q.getY() * v.getZ() ) - ( q.getZ() * v.getY() );
@@ -147,5 +118,74 @@ public class Quaternarion {
 		Quaternarion result = new Quaternarion( x, y, z, w );
 		
 		return result;
+	}
+	
+	public static float dotProduct( Quaternarion qa, Quaternarion qb ){
+		
+		float rz = ( ( qa.getX() * qb.getX() ) + 
+				     ( qa.getY() * qb.getY() ) + 
+				     ( qa.getZ() * qb.getZ() ) + 
+				     ( qa.getW() * qb.getW() ) );
+		
+		return rz;
+	}
+	
+	public static Quaternarion slerp( Quaternarion qa, Quaternarion qb, float t ){
+		
+		if ( t <= 0.0 ){
+			return qa;
+		}
+		
+		if ( t >= 1.0 ){
+			return qb;
+		}
+		
+		float cosOmega = Quaternarion.dotProduct( qa, qb );
+		
+		float bx = qb.getX();
+		float by = qb.getY();
+		float bz = qb.getZ();
+		float bw = qb.getW();
+		
+		if ( cosOmega < 0.0f ){
+			bx *= -1.0f;
+			by *= -1.0f;
+			bz *= -1.0f;
+			bw *= -1.0f;
+			cosOmega *= -1.0f;
+		}
+		
+		// cosOmega needs to be less than 1.1f
+		
+		/* compute interpolation fraction - first check if they're basically the same **/
+		float k0 = 0.0f;
+		float k1 = 0.0f;
+		
+		if ( cosOmega > 0.9999f ){
+			//very close, just use linear interpolation
+			
+			k0 = 1.0f - t;
+			k1 = t;
+		}
+		else {
+			float sinOmega = (float)Math.sqrt( 1.0 - ( (double)cosOmega * (double)cosOmega ) );
+			float omega = (float)Math.atan2( sinOmega, cosOmega );
+			
+			float oneOverSinOmega = (float)(1.0 / (double)sinOmega);
+			
+			// compute interpolation parameters
+			k0 = (float)Math.sin( (1.0 - (double)t) * (double)omega ) * oneOverSinOmega;
+			k1 = (float)Math.sin( (double)t * (double)omega ) * oneOverSinOmega; 
+		}
+		
+		// ineterpolate and return new quat
+		float w = ( k0 * qa.getW() ) + ( k1 * bw );
+		float x = ( k0 * qa.getX() ) + ( k1 * bx );
+		float y = ( k0 * qa.getY() ) + ( k1 * by );
+		float z = ( k0 * qa.getZ() ) + ( k1 * bz );
+		
+		Quaternarion rz = new Quaternarion( x, y, z, w );
+		
+		return rz;
 	}
 }

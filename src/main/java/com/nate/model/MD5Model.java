@@ -4,10 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-
-import org.lwjgl.BufferUtils;
 
 public class MD5Model {
 
@@ -127,6 +123,33 @@ public class MD5Model {
 			mesh.getVertexArray().put( finalVert.getY() );
 			mesh.getVertexArray().put( finalVert.getZ() );
 		}
+	}
+	
+	public MD5Joint[] interpolateSkeletons( MD5Joint[] skeletonA, MD5Joint[] skeletonB, int numberOfJoints, float interp ){
+		
+		MD5Joint[] newSkeleton = new MD5Joint[ numberOfJoints ];
+		
+		for ( int i = 0; i < numberOfJoints; i++ ){
+			
+			MD5Joint joint = new MD5Joint();
+			joint.setParent( skeletonA[i].getParent() );
+			
+			float x = skeletonA[i].getPosition().getX() + interp * ( skeletonB[i].getPosition().getX() - skeletonA[i].getPosition().getX() );
+			float y = skeletonA[i].getPosition().getY() + interp * ( skeletonB[i].getPosition().getY() - skeletonA[i].getPosition().getY() );
+			float z = skeletonA[i].getPosition().getZ() + interp * ( skeletonB[i].getPosition().getZ() - skeletonA[i].getPosition().getZ() );
+			
+			joint.setPosition( new Vector3f( x, y, z ) );
+			
+			Quaternarion slerped = Quaternarion.slerp( skeletonA[i].getOrientation(), 
+													   skeletonB[i].getOrientation(), 
+													   interp );
+			
+			joint.setOrientation( slerped );
+			
+			newSkeleton[i] = joint;
+		}
+		
+		return newSkeleton;
 	}
 	
 	public MD5Joint[] getBaseSkeleton() {
