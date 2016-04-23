@@ -21,6 +21,7 @@ public class MD5Mesh {
 	
 	private FloatBuffer vertexArray;
 	private IntBuffer indexArray;
+	private FloatBuffer texelArray;
 
 	protected static MD5Mesh loadMesh( BufferedReader fileIn ) throws Exception {
 		
@@ -151,6 +152,13 @@ public class MD5Mesh {
 		else {
 			vertexArray = BufferUtils.createFloatBuffer( getNumberOfVertices() * 3 );
 		}
+		
+		if ( texelArray != null ){
+			texelArray.clear();
+		}
+		else {
+			texelArray = BufferUtils.createFloatBuffer( getNumberOfVertices() * 2 );
+		}
 	}
 	
 	public IntBuffer getIndexArray(){
@@ -159,5 +167,9 @@ public class MD5Mesh {
 	
 	public FloatBuffer getVertexArray(){
 		return vertexArray;
+	}
+	
+	public FloatBuffer getTexelArray(){
+		return texelArray;
 	}
 }

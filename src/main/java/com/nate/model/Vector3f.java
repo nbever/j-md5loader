@@ -35,4 +35,10 @@ public class Vector3f {
 	public void setZ( float z ) {
 		this.z = z;
 	}
+	
+	@Override
+	public String toString() {
+	
+		return getX() + ", " + getY() + ", " + getZ();
+	}
 }

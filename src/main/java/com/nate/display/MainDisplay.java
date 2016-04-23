@@ -18,6 +18,7 @@ import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.macosx.Unistd.getpid;
 
 public class MainDisplay {
 
@@ -36,7 +37,8 @@ public class MainDisplay {
 	
 	public void run() {
 		System.out.println("Hello LWJGL " + Sys.getVersion() + "!");
-		
+		System.out.println( getpid() );
+		System.out.println("Running on thread: " + (System.getenv().get("JAVA_STARTED_ON_FIRST_THREAD_" + getpid())));
 		
 		try {
 		
@@ -163,9 +165,14 @@ public class MainDisplay {
 		}
 		
 		MD5AnimationInfo animInfo = new MD5AnimationInfo();
-		animInfo.setCurrentFrame( 0 );
-		animInfo.setNextFrame( 1 );
-		animInfo.setMaxTime( 1.0 / (double)anim.getFrameRate() );
+		
+		if ( anim != null ){
+			
+			animInfo.setCurrentFrame( 0 );
+			animInfo.setNextFrame( 1 );
+			animInfo.setMaxTime( 1.0 / (double)anim.getFrameRate() );
+				
+		}
 		
 		MD5Joint[] skeleton = newModel.getBaseSkeleton();
 		
@@ -177,11 +184,14 @@ public class MainDisplay {
 		while ( glfwWindowShouldClose(window) == GL_FALSE ) {
 			
 //			advanceAnimation( animInfo );
-			lastTime = currentTime;
-			currentTime = Instant.now().toEpochMilli() / anim.getFrameRate();
 			
-			if ( lastTime == 0 ){
+			if ( anim != null ){
 				lastTime = currentTime;
+				currentTime = Instant.now().toEpochMilli() / anim.getFrameRate();
+				
+				if ( lastTime == 0 ){
+					lastTime = currentTime;
+				}
 			}
 			
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
@@ -190,8 +200,9 @@ public class MainDisplay {
 			
 			glEnableClientState( GL_VERTEX_ARRAY );
 			glColor3f( 1.0f, 1.0f, 0.2f );
-			glScalef( 0.01f, 0.01f, 0.01f );
-			glRotatef( -90.0f, 1.0f, 0.0f, 0.0f );
+//			glScalef( 0.01f, 0.01f, 0.01f );
+			glScalef( 0.1f, 0.1f, 0.1f );
+//			glRotatef( -90.0f, 1.0f, 0.0f, 0.0f );
 			
 			if ( anim != null ){
 				
@@ -210,6 +221,7 @@ public class MainDisplay {
 				newModel.prepareModel( mesh, skeleton );
 				mesh.getIndexArray().flip();
 				mesh.getVertexArray().flip();
+				
 				
 				glVertexPointer( 3, 0, mesh.getVertexArray() );
 				glDrawElements( GL_TRIANGLES, mesh.getIndexArray() );

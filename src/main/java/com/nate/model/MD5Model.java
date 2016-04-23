@@ -22,7 +22,12 @@ public class MD5Model {
 		
 		// get the version
 		String line = getNextLine( fileIn );
-		int version = Integer.parseInt( line.substring( line.indexOf( " " ) + 1 ) );
+		line = line.substring( line.indexOf( " " ) + 1 );
+		
+		if ( line.indexOf( " " ) != -1 ){
+			line = line.substring( 0, line.indexOf( " " ) );
+		}
+		int version = Integer.parseInt( line );
 		
 		if ( version != 10 ){
 			throw new Exception( "MD5 version is not supported: " +version );
@@ -122,6 +127,9 @@ public class MD5Model {
 			mesh.getVertexArray().put( finalVert.getX() );
 			mesh.getVertexArray().put( finalVert.getY() );
 			mesh.getVertexArray().put( finalVert.getZ() );
+			
+			mesh.getTexelArray().put( vert.getTextureCoordinates().getU() );
+			mesh.getTexelArray().put( vert.getTextureCoordinates().getV() );
 		}
 	}
 	
