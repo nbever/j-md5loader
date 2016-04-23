@@ -25,7 +25,9 @@ public class MD5Animation {
 		
 		String line = getNextLine( fileIn );
 		
-		int version = Integer.parseInt( line.substring( line.indexOf( " " ) + 1 ) );
+		String[] lineTokens = line.split( " " );
+		
+		int version = Integer.parseInt( lineTokens[1] );
 		
 		if ( version != 10 ){
 			throw new Exception( "MD5 version is not supported: " + version );

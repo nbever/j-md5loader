@@ -151,11 +151,12 @@ public class MainDisplay {
 		MD5Animation anim = null;
 		
 		try {
-			URL newUrl = MD5Model.class.getResource( "/boblampclean.md5mesh" );
+			URL newUrl = MD5Model.class.getResource( "/obj_base2_bak.md5mesh" );
 			newModel = MD5Model.loadModel( newUrl.getFile() );
 			
-			URL animUrl = MD5Model.class.getResource( "/boblampclean.md5anim" );
+			URL animUrl = MD5Model.class.getResource( "/obj_base2_bak.md5anim" );
 			anim = MD5Animation.loadAnimation( animUrl.getFile() );
+//			anim = null;
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -163,9 +164,12 @@ public class MainDisplay {
 		}
 		
 		MD5AnimationInfo animInfo = new MD5AnimationInfo();
-		animInfo.setCurrentFrame( 0 );
-		animInfo.setNextFrame( 1 );
-		animInfo.setMaxTime( 1.0 / (double)anim.getFrameRate() );
+		
+		if ( anim != null ){
+			animInfo.setCurrentFrame( 0 );
+			animInfo.setNextFrame( 1 );
+			animInfo.setMaxTime( 1.0 / (double)anim.getFrameRate() );
+		}
 		
 		MD5Joint[] skeleton = newModel.getBaseSkeleton();
 		
@@ -178,7 +182,10 @@ public class MainDisplay {
 			
 //			advanceAnimation( animInfo );
 			lastTime = currentTime;
-			currentTime = Instant.now().toEpochMilli() / anim.getFrameRate();
+			
+			if ( anim != null ){
+				currentTime = (Instant.now().toEpochMilli() / anim.getFrameRate());// / 5;
+			}
 			
 			if ( lastTime == 0 ){
 				lastTime = currentTime;
@@ -190,8 +197,10 @@ public class MainDisplay {
 			
 			glEnableClientState( GL_VERTEX_ARRAY );
 			glColor3f( 1.0f, 1.0f, 0.2f );
-			glScalef( 0.01f, 0.01f, 0.01f );
-			glRotatef( -90.0f, 1.0f, 0.0f, 0.0f );
+			glScalef( 0.4f, 0.4f, 0.4f );
+//			glTranslatef( 5.0f, 130.0f, 0.0f );
+			glRotatef( 270.0f, 1.0f, 0.0f, 0.0f );
+			glRotatef( 90.0f, 0.0f, 0.0f, 1.0f );
 			
 			if ( anim != null ){
 				
@@ -205,7 +214,11 @@ public class MainDisplay {
 				skeleton = newModel.getBaseSkeleton();
 			}
 			
-			for ( MD5Mesh mesh : newModel.getMeshes() ){
+			for ( int mi = 0; mi < newModel.getNumberOfMeshes(); mi++ ){
+				
+				glPushMatrix();
+				
+				MD5Mesh mesh = newModel.getMeshes()[mi];
 				
 				newModel.prepareModel( mesh, skeleton );
 				mesh.getIndexArray().flip();
@@ -213,6 +226,8 @@ public class MainDisplay {
 				
 				glVertexPointer( 3, 0, mesh.getVertexArray() );
 				glDrawElements( GL_TRIANGLES, mesh.getIndexArray() );
+				
+				glPopMatrix();
 			}
 			
 			glDisableClientState( GL_VERTEX_ARRAY );
@@ -221,7 +236,7 @@ public class MainDisplay {
 			
 			glPushMatrix();
 			
-				glPointSize( 12.0f );
+				glPointSize( 6.0f );
 				glColor3f( 1.0f, 1.0f, 1.0f );
 				glBegin( GL_POINTS );
 					glVertex3f( 0.0f, 0.0f, 0.0f );
