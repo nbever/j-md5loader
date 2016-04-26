@@ -73,8 +73,8 @@ public class MD5Model {
 			
 			MD5Mesh mesh = MD5Mesh.loadMesh( fileIn );
 			model.getMeshes()[j] = mesh;
+			
 		}
-		
 		
 		return model;
 	}

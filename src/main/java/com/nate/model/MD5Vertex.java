@@ -3,6 +3,7 @@ package com.nate.model;
 public class MD5Vertex {
 
 	private Vector2f textureCoordinates;
+	private Vector3f baseNormal;
 	
 	private int startWeight;
 	private int weightCount;
@@ -34,6 +35,14 @@ public class MD5Vertex {
 	
 	public void setTextureCoordinates( Vector2f textureCoordinates ) {
 		this.textureCoordinates = textureCoordinates;
+	}
+	
+	public Vector3f getBaseNormal() {
+		return baseNormal;
+	}
+	
+	public void setBaseNormal( Vector3f aNormal ) {
+		baseNormal = aNormal;
 	}
 	
 	public int getStartWeight() {

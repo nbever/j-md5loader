@@ -233,7 +233,6 @@ public class MainDisplay {
 				mesh.getIndexArray().flip();
 				mesh.getVertexArray().flip();
 				
-				
 				glVertexPointer( 3, 0, mesh.getVertexArray() );
 				glDrawElements( GL_TRIANGLES, mesh.getIndexArray() );
 				
