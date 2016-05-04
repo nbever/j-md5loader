@@ -12,6 +12,10 @@ public class Vector3f {
 		this.z = z;
 	}
 	
+	public Vector3f copy(){
+		return new Vector3f( this.getX(), this.getY(), this.getZ() );
+	}
+	
 	public float getX() {
 		return x;
 	}
@@ -77,11 +81,31 @@ public class Vector3f {
 		return ret;
 	}
 	
+	public static Vector3f lerp( Vector3f a, Vector3f b, float amount ){
+		
+		// linear interpolation for position
+//		float x = skeletonA[i].getPosition().getX() + interp * ( skeletonB[i].getPosition().getX() - skeletonA[i].getPosition().getX() );
+//		float y = skeletonA[i].getPosition().getY() + interp * ( skeletonB[i].getPosition().getY() - skeletonA[i].getPosition().getY() );
+//		float z = skeletonA[i].getPosition().getZ() + interp * ( skeletonB[i].getPosition().getZ() - skeletonA[i].getPosition().getZ() );
+//		
+//		joint.setPosition( new Vector3f( x, y, z ) );
+//		
+		float x = a.getX() + amount * (b.getX() - a.getX());
+		float y = a.getY() + amount * (b.getY() - a.getY());
+		float z = a.getZ() + amount * (b.getZ() - a.getZ());
+		
+		return new Vector3f( x, y, z );
+	}
+	
 	public static Vector3f add( Vector3f a, Vector3f b ){
 		return new Vector3f( a.getX() + b.getX(), a.getY() + b.getY(), a.getZ() + b.getZ() );
 	}
 	
 	public static Vector3f subtract( Vector3f a, Vector3f b ){
 		return new Vector3f( a.getX() - b.getX(), a.getY() - b.getY(), a.getZ() - b.getZ() );
+	}
+	
+	public static Vector3f scalar( Vector3f v, float scalar ){
+		return new Vector3f( v.getX() * scalar, v.getY() * scalar, v.getZ() * scalar );
 	}
 }

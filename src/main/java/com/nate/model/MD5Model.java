@@ -4,16 +4,25 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.lwjgl.opengl.GL11.*;
 
 public class MD5Model {
 
-	private MD5Joint[] baseSkeleton;
-	private MD5Mesh[] meshes;
-	
 	private int numberOfJoints;
 	private int numberOfMeshes;
+
+	private boolean hasAnimation;
+	List<MD5Joint> joints;
+	List<MD5Mesh> meshes;
 	
-	public static MD5Model loadModel( String file ) throws Exception{
+	private MD5Animation animation;
+	
+	public static MD5Model loadModel( String file, Integer textureId ) throws Exception{
 		
 		MD5Model model = new MD5Model();
 		File modelFile = new File( file );
@@ -55,7 +64,7 @@ public class MD5Model {
 			for ( int i = 0; i < numJoints; i++ ){
 				
 				line = getNextLine( fileIn );
-				model.getBaseSkeleton()[i] = MD5Joint.parse( line );
+				model.getJoints().add( MD5Joint.parse( line ) );
 			}
 			
 			// closing brace
@@ -71,9 +80,11 @@ public class MD5Model {
 				line = getNextLine( fileIn );
 			}
 			
-			MD5Mesh mesh = MD5Mesh.loadMesh( fileIn );
-			model.getMeshes()[j] = mesh;
+			MD5Mesh mesh = MD5Mesh.loadMesh( fileIn, textureId );
+			model.getMeshes().add( mesh );
 			
+			model.prepareMesh( mesh, model.getJoints() );
+			model.prepareNormals( mesh );
 		}
 		
 		return model;
@@ -92,88 +103,311 @@ public class MD5Model {
 		
 	}
 	
-	public void prepareModel( MD5Mesh mesh, MD5Joint[] skeleton ){
+	public void prepareMesh( MD5Mesh mesh, List<? extends MD5Joint> joints ){
 		
 		mesh.initializeBuffers();
 		
-		for ( int t = 0; t < mesh.getNumberOfTriangles(); t++ ){
+		for ( int v_i = 0; v_i < mesh.getNumberOfVertices(); v_i++ ){
 			
-			mesh.getIndexArray().put( mesh.getTriangles()[t].getVertices()[0] );
-			mesh.getIndexArray().put( mesh.getTriangles()[t].getVertices()[1] );
-			mesh.getIndexArray().put( mesh.getTriangles()[t].getVertices()[2] );
-		}
-		
-		for ( int v = 0; v < mesh.getNumberOfVertices(); v++ ){
+			Vector3f finalPosition = new Vector3f( 0.0f, 0.0f, 0.0f );
+			MD5Vertex vert = mesh.getVertices()[v_i];
 			
-			MD5Vertex vert = mesh.getVertices()[v];
+			vert.setPosition( new Vector3f( 0.0f, 0.0f, 0.0f ) );
+			vert.setNormal( new Vector3f( 0.0f, 0.0f, 0.0f ) );
 			
-			Vector3f finalVert = new Vector3f( 0.0f, 0.0f, 0.0f );
-			
-			for( int j = 0; j < vert.getWeightCount(); j++ ) {
+			// sum the position of the weights
+			for ( int w_i = 0; w_i < vert.getWeightCount(); w_i++ ){
 				
-				MD5Weight weight = mesh.getWeights()[ vert.getStartWeight() + j ];
-				MD5Joint joint = skeleton[ weight.getJoint() ];
+				MD5Weight weight = mesh.getWeights()[vert.getStartWeight() + w_i];
+				MD5Joint joint = joints.get( weight.getJoint() );
 				
-				Vector3f rot = Quaternarion.rotatePoint( joint.getOrientation(), weight.getPosition() );
+				// convert the weight position from joint local space to object spaces
+				Vector3f rotPos3 = Quaternarion.rotatePoint( joint.getOrientation(), weight.getPosition() );
 				
-				float x = finalVert.getX() + ( ( joint.getPosition().getX() + rot.getX() ) * weight.getBias() );
-				float y = finalVert.getY() + ( ( joint.getPosition().getY() + rot.getY() ) * weight.getBias() );
-				float z = finalVert.getZ() + ( ( joint.getPosition().getZ() + rot.getZ() ) * weight.getBias() );
+				Vector3f j_r = Vector3f.add( joint.getPosition(), rotPos3 );
+				vert.setPosition( Vector3f.scalar( j_r, weight.getBias() ) );
 				
-				finalVert.setX( x );
-				finalVert.setY( y );
-				finalVert.setZ( z );
+				finalPosition = Vector3f.add( finalPosition, vert.getPosition() );
 			}
 			
-			mesh.getVertexArray().put( finalVert.getX() );
-			mesh.getVertexArray().put( finalVert.getY() );
-			mesh.getVertexArray().put( finalVert.getZ() );
+			mesh.getVertexArray().put( finalPosition.getX() );
+			mesh.getVertexArray().put( finalPosition.getY() );
+			mesh.getVertexArray().put( finalPosition.getZ() );
 			
 			mesh.getTexelArray().put( vert.getTextureCoordinates().getU() );
 			mesh.getTexelArray().put( vert.getTextureCoordinates().getV() );
 		}
 	}
 	
-	public MD5Joint[] interpolateSkeletons( MD5Joint[] skeletonA, MD5Joint[] skeletonB, int numberOfJoints, float interp ){
+//	public void prepareMesh( MD5Mesh mesh, List<? extends MD5Joint> skeleton ){
+//		
+//		mesh.initializeBuffers();
+//		
+//		for ( int i = 0; i < mesh.getNumberOfVertices(); i++ ){
+//			
+//			MD5Vertex vert = mesh.getVertices()[i];
+//			
+//			// they get the actuals then zero them out... seems odd.
+//			
+//			Vector3f position = new Vector3f( 0.0f, 0.0f, 0.0f );
+//			Vector3f normal = new Vector3f( 0.0f, 0.0f, 0.0f );
+//			
+//			vert.setPosition( position );
+//			vert.setNormal( normal );
+//			
+//			for ( int j = 0; j < vert.getWeightCount(); j++ ){
+//				
+//				MD5Weight weight = mesh.getWeights()[vert.getStartWeight() + j ];
+//				MD5Joint joint = skeleton.get( weight.getJoint() );
+//				
+//				Vector3f rotPos = Quaternarion.rotatePoint( joint.getOrientation(), weight.getPosition() );
+//				
+//				Vector3f j_r = Vector3f.add( joint.getPosition(), rotPos );
+//				vert.setPosition( Vector3f.scalar( j_r, weight.getBias() ) );
+//				position = Vector3f.add( position, vert.getPosition() );
+//				
+//				Vector3f o_n = Quaternarion.rotatePoint( joint.getOrientation(), vert.getNormal() );
+//				vert.setNormal( Vector3f.scalar( o_n, weight.getBias() ) );
+//				normal = Vector3f.add( vert.getNormal(), normal );
+//				
+//			}
+//			
+//			mesh.getVertexArray().put( vert.getPosition().getX() );
+//			mesh.getVertexArray().put( vert.getPosition().getY() );
+//			mesh.getVertexArray().put( vert.getPosition().getZ() );
+//			
+//			mesh.getNormalArray().put( vert.getNormal().getX() );
+//			mesh.getNormalArray().put( vert.getNormal().getY() );
+//			mesh.getNormalArray().put( vert.getNormal().getZ() );
+//		}
+//	}
+	
+	public void prepareNormals( MD5Mesh mesh ){
 		
-		MD5Joint[] newSkeleton = new MD5Joint[ numberOfJoints ];
+		mesh.getNormalArray().clear();
 		
-		for ( int i = 0; i < numberOfJoints; i++ ){
+		for ( int i = 0; i < mesh.getNumberOfTriangles(); i++ ){
 			
-			MD5Joint joint = new MD5Joint();
-			joint.setParent( skeletonA[i].getParent() );
+			MD5Triangle tri = mesh.getTriangles()[i];
+			Vector3f v0 = mesh.getVertices()[ tri.getVertices()[0]].getPosition();
+			Vector3f v1 = mesh.getVertices()[ tri.getVertices()[1]].getPosition();
+			Vector3f v2 = mesh.getVertices()[ tri.getVertices()[2]].getPosition();
 			
-			float x = skeletonA[i].getPosition().getX() + interp * ( skeletonB[i].getPosition().getX() - skeletonA[i].getPosition().getX() );
-			float y = skeletonA[i].getPosition().getY() + interp * ( skeletonB[i].getPosition().getY() - skeletonA[i].getPosition().getY() );
-			float z = skeletonA[i].getPosition().getZ() + interp * ( skeletonB[i].getPosition().getZ() - skeletonA[i].getPosition().getZ() );
+			Vector3f v2m0 = Vector3f.subtract( v2, v0 );
+			Vector3f v1m0 = Vector3f.subtract( v1, v0 );
+			Vector3f normal = Vector3f.multiply( v2m0, v1m0 );
 			
-			joint.setPosition( new Vector3f( x, y, z ) );
+			Vector3f n0 = Vector3f.add( mesh.getVertices()[tri.getVertices()[0]].getNormal(), normal );
+			Vector3f n1 = Vector3f.add( mesh.getVertices()[tri.getVertices()[1]].getNormal(), normal );
+			Vector3f n2 = Vector3f.add( mesh.getVertices()[tri.getVertices()[2]].getNormal(), normal );
 			
-			Quaternarion slerped = Quaternarion.slerp( skeletonA[i].getOrientation(), 
-													   skeletonB[i].getOrientation(), 
-													   interp );
+			mesh.getVertices()[tri.getVertices()[0]].setNormal( n0 );
+			mesh.getVertices()[tri.getVertices()[1]].setNormal( n1 );
+			mesh.getVertices()[tri.getVertices()[2]].setNormal( n2 );
 			
-			joint.setOrientation( slerped );
-			
-			newSkeleton[i] = joint;
 		}
 		
-		return newSkeleton;
+		//Now normalize all the normals
+		for ( int j = 0; j < mesh.getNumberOfVertices(); j++ ){
+			MD5Vertex vert = mesh.getVertices()[j];
+			
+			Vector3f normal = Vector3f.normalize( vert.getNormal() );
+			mesh.getNormalArray().put( normal.getX() );
+			mesh.getNormalArray().put( normal.getY() );
+			mesh.getNormalArray().put( normal.getZ() );
+			
+			//reset the normal to calculate the bind-pose normal in joint space
+			vert.setNormal( new Vector3f( 0.0f, 0.0f, 0.0f ) );
+			
+			//put the bind-pose normal into joint-local space
+			//so the animated normal can be computed faster later
+			for ( int k = 0; k < vert.getWeightCount(); k++ ){
+				MD5Weight weight = mesh.getWeights()[vert.getStartWeight()+k];
+				MD5Joint joint = getJoints().get( weight.getJoint() );
+				
+				Quaternarion qNO = Quaternarion.multiply( joint.getOrientation(), normal );
+				Vector3f n_o = new Vector3f( qNO.getX(), qNO.getY(), qNO.getZ() );
+				Vector3f n_scale = Vector3f.scalar( n_o, weight.getBias() );
+				vert.setNormal( Vector3f.add( n_scale, vert.getNormal() ) );
+			}
+		}
 	}
 	
-	public MD5Joint[] getBaseSkeleton() {
-		return baseSkeleton;
+	public void update( float deltaTime ){
+
+		if ( hasAnimation() ){
+			
+			getAnimation().update( deltaTime );
+			MD5FrameSkeleton skeleton = getAnimation().getAnimatedSkeleton();
+			
+//			renderSkeleton( skeleton.getSkeletonJoints() );
+			
+			for ( int i = 0; i < getMeshes().size(); i++ ){
+				prepareMesh( getMeshes().get( i ), skeleton.getSkeletonJoints() );
+			}
+		}
 	}
 	
-	public void setBaseSkeleton( MD5Joint[] baseSkeleton ) {
-		this.baseSkeleton = baseSkeleton;
+	public void render(){
+	    glPushMatrix();
+
+	    // Render the meshes
+	    for ( int i = 0; i < getMeshes().size(); ++i )
+	    {
+	        renderMesh(getMeshes().get( i ) );
+	    }
+	    
+//	    m_Animation.Render();
+
+	    for ( int i = 0; i < getMeshes().size(); ++i )
+	    {
+//	        renderNormals( getMeshes().get( i ) );
+	    }
+
+	    renderSkeleton( getAnimation().getAnimatedSkeleton().getSkeletonJoints() );
+	    
+	    
+	    glPopMatrix();
 	}
 	
-	public MD5Mesh[] getMeshes() {
+	public void renderMesh( MD5Mesh mesh ){
+		
+	    glColor3f( 1.0f, 1.0f, 1.0f );
+	    
+	    glEnableClientState( GL_VERTEX_ARRAY );
+	    glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+	    glEnableClientState( GL_NORMAL_ARRAY );
+	    glEnable( GL_TEXTURE_2D );
+	    
+	    FloatBuffer dvBuffer = mesh.getVertexArray().duplicate();
+	    FloatBuffer dnBuffer = mesh.getNormalArray().duplicate();
+	    FloatBuffer dtBuffer = mesh.getTexelArray().duplicate();
+	    IntBuffer diBuffer = mesh.getIndexArray().duplicate();
+	    
+	    mesh.getVertexArray().flip();
+	    mesh.getNormalArray().flip();
+	    mesh.getIndexArray().flip();
+	    mesh.getTexelArray().flip();
+
+	    glBindTexture( GL_TEXTURE_2D, mesh.getTextureId() );
+	    glVertexPointer( 3, 0, mesh.getVertexArray() );
+	    glNormalPointer( 3, mesh.getNormalArray() );
+	    glTexCoordPointer( 2, 0, mesh.getTexelArray() );
+	    
+	    glDrawElements( GL_TRIANGLES, mesh.getIndexArray() );
+
+	    glDisableClientState( GL_NORMAL_ARRAY );
+	    glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	    glDisableClientState( GL_VERTEX_ARRAY );
+	 
+	    glDisable( GL_TEXTURE_2D );
+	    
+	    glBindTexture( GL_TEXTURE_2D, 0 );
+	    
+	    mesh.setVertexArray( dvBuffer );
+	    mesh.setIndexArray( diBuffer );
+	    mesh.setNormalArray( dnBuffer );
+	    mesh.setTexelArray( dtBuffer );
+	 
+	}
+	
+	public void renderNormals( MD5Mesh mesh ){
+		
+	    glPushAttrib( GL_ENABLE_BIT );
+	    glDisable( GL_LIGHTING );
+	    
+	    glColor3f( 1.0f, 1.0f, 0.0f );// Yellow
+
+	    glBegin( GL_LINES );
+	    {
+	    	
+	        for ( int i = 0; i < mesh.getVertices().length; i++ )
+	        {
+	        	int index = i*3;
+	        	
+	            Vector3f p0 = new Vector3f( mesh.getVertexArray().get( index ),
+	            	mesh.getVertexArray().get( index+1 ),
+	            	mesh.getVertexArray().get( index+2 ) );
+	            
+	            Vector3f n0 = new Vector3f( mesh.getNormalArray().get( index ),
+	            	mesh.getNormalArray().get( index+1 ),
+	            	mesh.getNormalArray().get( index+2 ) );
+	            
+	            Vector3f p1 = Vector3f.add( p0, n0 );
+
+	            glVertex3f( p0.getX(), p0.getY(), p0.getZ() );
+	            glVertex3f( p1.getX(), p1.getY(), p1.getZ() );
+	        }
+	    }
+	    glEnd();
+
+	    glPopAttrib();
+	}
+	
+	public void renderSkeleton( List<? extends MD5Joint> joints ){
+	    
+		glPointSize( 5.0f );
+	    glColor3f( 1.0f, 0.0f, 0.0f );
+	    
+	    glPushAttrib( GL_ENABLE_BIT );
+
+	    glDisable(GL_LIGHTING );
+	    glDisable( GL_DEPTH_TEST );
+	    
+	 // Draw the joint positions
+	    glBegin( GL_POINTS );
+	    {
+	        for ( int i = 0; i < joints.size(); ++i )
+	        {
+	        	Vector3f pos = joints.get( i ).getPosition();
+	        	glVertex3f( pos.getX(), pos.getY(), pos.getZ() );
+	        }
+	    }
+	    glEnd();
+
+	    // Draw the bones
+	    glColor3f( 0.0f, 1.0f, 0.0f );
+	    glBegin( GL_LINES );
+	    {
+	        for ( int i = 0; i < joints.size(); ++i )
+	        {
+	        	MD5Joint j0 = joints.get( i );
+	            if ( j0.getParent() != -1 )
+	            {
+	            	MD5Joint j1 = joints.get( j0.getParent() );
+	                Vector3f j0pos = j0.getPosition();
+	                Vector3f j1pos = j1.getPosition();
+	                glVertex3f( j0pos.getX(), j0pos.getY(), j0pos.getZ() );
+	                glVertex3f( j1pos.getX(), j1pos.getY(), j1pos.getZ() );
+	            }
+	        }
+	    }
+	    glEnd();
+
+	    glPopAttrib();
+	}
+	
+	public List<MD5Joint> getJoints() {
+		
+		if ( joints == null ){
+			joints = new ArrayList<MD5Joint>();
+		}
+		return joints;
+	}
+	
+	public void setJoints( List<MD5Joint> baseSkeleton ) {
+		this.joints = baseSkeleton;
+	}
+	
+	public List<MD5Mesh> getMeshes() {
+		
+		if ( meshes == null ){
+			meshes = new ArrayList<MD5Mesh>();
+		}
 		return meshes;
 	}
 	
-	public void setMeshes( MD5Mesh[] meshes ) {
+	public void setMeshes( List<MD5Mesh> meshes ) {
 		this.meshes = meshes;
 	}
 	
@@ -184,7 +418,6 @@ public class MD5Model {
 	public void setNumberOfJoints( int numberOfJoints ) {
 		
 		this.numberOfJoints = numberOfJoints;
-		baseSkeleton = new MD5Joint[ numberOfJoints ];
 	}
 	
 	public int getNumberOfMeshes() {
@@ -194,6 +427,18 @@ public class MD5Model {
 	public void setNumberOfMeshes( int numberOfMeshes ) {
 		
 		this.numberOfMeshes = numberOfMeshes;
-		meshes = new MD5Mesh[ numberOfMeshes ];
+	}
+	
+	public void setAnimation( MD5Animation anAnim ){
+		this.animation = anAnim;
+		this.hasAnimation = true;
+	}
+	
+	public MD5Animation getAnimation(){
+		return this.animation;
+	}
+	
+	public boolean hasAnimation(){
+		return hasAnimation;
 	}
 }

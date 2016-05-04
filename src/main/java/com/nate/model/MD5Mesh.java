@@ -17,6 +17,8 @@ public class MD5Mesh {
 	private int numberOfTriangles;
 	private int numberOfWeights;
 	
+	private Integer textureId;
+	
 	private String shader;
 	
 	private FloatBuffer vertexArray;
@@ -24,9 +26,11 @@ public class MD5Mesh {
 	private FloatBuffer texelArray;
 	private FloatBuffer normalArray;
 
-	protected static MD5Mesh loadMesh( BufferedReader fileIn ) throws Exception {
+	protected static MD5Mesh loadMesh( BufferedReader fileIn, Integer texId ) throws Exception {
 		
 		MD5Mesh mesh = new MD5Mesh();
+		
+		mesh.setTextureId( texId );
 		
 		String line = getNextLine( fileIn );
 		mesh.setShader( line.substring( line.indexOf( " " ) + 1 ) );
@@ -46,11 +50,16 @@ public class MD5Mesh {
 		line = getNextLine( fileIn );
 		int numTris = Integer.parseInt( line.substring( line.indexOf( " " ) + 1 ) );
 		mesh.setNumberOfTriangles( numTris );
+		mesh.indexArray = BufferUtils.createIntBuffer( numTris * 3 );
 		
 		for ( int j = 0; j < numTris; j++ ){
 			line = getNextLine( fileIn );
 			MD5Triangle tri = MD5Triangle.parse( line );
 			mesh.getTriangles()[j] = tri;
+
+			mesh.getIndexArray().put( tri.getVertices()[0] );
+			mesh.getIndexArray().put( tri.getVertices()[1] );
+			mesh.getIndexArray().put( tri.getVertices()[2] );
 		}
 		
 		// the weights
@@ -73,9 +82,13 @@ public class MD5Mesh {
 		do {
 			line = fileIn.readLine();
 		}
-		while( line == null || line.trim().length() == 0 );
+		while( line == null || line.trim().length() == 0 || line.trim().startsWith( "//" ) );
 		
 		return line.trim();
+		
+	}
+	
+	public void renderMesh(){
 		
 	}
 	
@@ -138,14 +151,22 @@ public class MD5Mesh {
 		this.shader = shader;
 	}
 	
+	public Integer getTextureId(){
+		return textureId;
+	}
+	
+	public void setTextureId( Integer anId ){
+		textureId = anId;
+	}
+	
 	public void initializeBuffers(){
 		
-		if ( indexArray != null ){
-			indexArray.clear();
-		}
-		else {
-			indexArray = BufferUtils.createIntBuffer( getNumberOfTriangles() * 3 );
-		}
+//		if ( indexArray != null ){
+//			indexArray.clear();
+//		}
+//		else {
+//			indexArray = BufferUtils.createIntBuffer( getNumberOfTriangles() * 3 );
+//		}
 		
 		if ( vertexArray != null ){
 			vertexArray.clear();
@@ -160,25 +181,44 @@ public class MD5Mesh {
 		else {
 			texelArray = BufferUtils.createFloatBuffer( getNumberOfVertices() * 2 );
 		}
-	}
-	
-	public void initializeNormalBuffer(){
-		normalArray =  BufferUtils.createFloatBuffer( getNumberOfVertices() * 3 );
+		
+		if ( normalArray != null ){
+			normalArray.clear();
+		}
+		else {
+			normalArray =  BufferUtils.createFloatBuffer( getNumberOfVertices() * 3 );
+		}
 	}
 	
 	public IntBuffer getIndexArray(){
 		return indexArray;
 	}
 	
+	public void setIndexArray( IntBuffer buf ){
+		indexArray = buf;
+	}
+	
 	public FloatBuffer getVertexArray(){
 		return vertexArray;
+	}
+	
+	public void setVertexArray( FloatBuffer buf ){
+		vertexArray = buf;
 	}
 	
 	public FloatBuffer getTexelArray(){
 		return texelArray;
 	}
 	
+	public void setTexelArray( FloatBuffer buf ){
+		texelArray = buf;
+	}
+	
 	public FloatBuffer getNormalArray(){
 		return normalArray;
+	}
+	
+	public void setNormalArray( FloatBuffer buf ){
+		normalArray = buf;
 	}
 }

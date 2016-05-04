@@ -5,6 +5,8 @@ public class MD5BaseFrameJoint {
 	private Vector3f position;
 	private Quaternarion orientation;
 	
+	public MD5BaseFrameJoint(){}
+
 	public static MD5BaseFrameJoint parseBaseFrameLine( String line ) throws Exception{
 		
 		MD5BaseFrameJoint data = new MD5BaseFrameJoint();
@@ -35,16 +37,16 @@ public class MD5BaseFrameJoint {
 	public Vector3f getPosition() {
 		return position;
 	}
-	
-	public void setPosition( Vector3f position ) {
+
+	public void setPosition(Vector3f position) {
 		this.position = position;
 	}
-	
+
 	public Quaternarion getOrientation() {
 		return orientation;
 	}
-	
-	public void setOrientation( Quaternarion orientation ) {
+
+	public void setOrientation(Quaternarion orientation) {
 		this.orientation = orientation;
 	}
 	

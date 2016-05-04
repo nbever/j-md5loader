@@ -4,17 +4,31 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import sun.security.action.GetLongAction;
+import org.lwjgl.BufferUtils;
+
 
 public class MD5Animation {
 
+	private List<MD5JointInfo> jointInfos;
+	private List<MD5Bound> bounds;
+	private List<MD5BaseFrameJoint> baseFrames;
+	private List<MD5FrameData> frames;
+	private List<MD5FrameSkeleton> skeletons;
+	
+	private MD5FrameSkeleton animatedSkeleton;
+	
+	private int md5Version;
 	private int numberOfFrames;
 	private int numberOfJoints;
 	private int frameRate;
+	private int numAnimatedComponents;
 	
-	private MD5Joint[][] skeletonFrames;
-	private MD5BoundingBox[] boundingBoxes;
+	float animationDuration;
+	float frameDuration;
+	float animationTime;
 	
 	public static MD5Animation loadAnimation( String file ) throws Exception{
 		
@@ -48,15 +62,12 @@ public class MD5Animation {
 		anim.setFrameRate( frameRate );
 		anim.setNumberOfJoints( numJoints );
 		anim.setNumberOfFrames( numFrames );
+		anim.setNumAnimatedComponents( numAnimatedComponents );
 		
-		MD5Joint[][] skeletonFrames = new MD5Joint[ anim.getNumberOfFrames() ][ anim.getNumberOfJoints() ];
-		MD5BoundingBox[] bboxes = new MD5BoundingBox[ anim.getNumberOfFrames() ];
-		float[] animationData = new float[ numAnimatedComponents ];
-		MD5JointInfo[] jointInfos = new MD5JointInfo[ anim.getNumberOfJoints() ];
-		MD5BaseFrameJoint[] baseFrameJoints = new MD5BaseFrameJoint[ anim.getNumberOfJoints() ];
-		
-		anim.setSkeletonFrames( skeletonFrames );
-		anim.setBoundingBoxes( bboxes );
+		anim.setBounds( new ArrayList<MD5Bound>() );
+		anim.setJointInfos( new ArrayList<MD5JointInfo>() );
+		anim.setBaseFrames( new ArrayList<MD5BaseFrameJoint>() );
+		anim.setSkeletons( new ArrayList<MD5FrameSkeleton>() );
 		
 		// hierarchy (joint infos)
 		getNextLine( fileIn );
@@ -64,58 +75,105 @@ public class MD5Animation {
 		for ( int i = 0; i < numJoints; i++ ){
 			line = getNextLine( fileIn );
 			
-			jointInfos[i] = MD5JointInfo.parseLine( line );
+			anim.getJointInfos().add( MD5JointInfo.parseLine( line ) );
 		}
 		
-		getNextLine( fileIn );
-		getNextLine( fileIn );
+		line = getNextLine( fileIn );
+		
+		if ( line.indexOf( "bounds" ) == -1 ){
+			line = getNextLine( fileIn );
+		}
 		
 		// bounds
 		for ( int j = 0; j < numFrames; j++ ){
 			line = getNextLine( fileIn );
 			
-			anim.getBoundingBoxes()[j] = MD5BoundingBox.parseLine( line );
+			anim.getBounds().add( MD5Bound.parseLine( line ) );
 		}
 		
 		// base frame
-		getNextLine( fileIn );
-		getNextLine( fileIn );
+		line = getNextLine( fileIn );
+		
+		if ( line.indexOf( "baseframe" ) == -1 ){
+			getNextLine( fileIn );
+		}
 		
 		for ( int k = 0; k < numJoints; k++ ){
 			line = getNextLine( fileIn );
 			
 			MD5BaseFrameJoint data = MD5BaseFrameJoint.parseBaseFrameLine( line );
 			data.getOrientation().computeW();
-			baseFrameJoints[k] = data;
+			anim.getBaseFrames().add( data );
 		}
 		
-		getNextLine( fileIn );
+		line = getNextLine( fileIn );
 		
 		// now do all the other frames
 		for ( int l = 0; l < numFrames; l++ ){
+
+			while ( line != null && line.indexOf( "frame" ) == -1 ){
+				line = getNextLine( fileIn );
+			}
 			
-			line = getNextLine( fileIn );
+			MD5FrameData frame = new MD5FrameData();
+			frame.setFrameData( BufferUtils.createFloatBuffer( anim.getNumAnimatedComponents() ) );
 			
 			// fill animated data with the floats for the frame
-			for ( int m = 0; m < numJoints; m++ ){
-				
-				line = getNextLine( fileIn );
-				
+			line = getNextLine( fileIn );
+			while ( line != null && line.indexOf( "frame" ) == -1 ){
+
 				String[] datas = line.split( " " );
+				
 				
 				for ( int i = 0; i < datas.length; i++ ){
 					float f = Float.parseFloat( datas[i] );
-					animationData[m*6 + i] = f;
+					frame.getFrameData().put( f );
 				}
+				
+				line = getNextLine( fileIn );
+				
 			}
 			
-			buildFrameSkeleton( jointInfos, baseFrameJoints, animationData,
-				anim.getSkeletonFrames()[l], anim.getNumberOfJoints() );
+			anim.getFrames().add( frame );
 			
-			line = getNextLine( fileIn );
+			MD5FrameSkeleton skel = buildFrameSkeleton( anim.getJointInfos(), anim.getBaseFrames(), frame );
+			anim.getSkeletons().add( skel );
 		}
 	
+		MD5FrameSkeleton animatedSkeleton = new MD5FrameSkeleton();
+		
+		for ( int skj = 0; skj < anim.getNumberOfJoints(); skj++ ){
+			animatedSkeleton.getSkeletonJoints().add(  new MD5SkeletonJoint() );
+		}
+		
+		anim.setAnimatedSkeleton( anim.getSkeletons().get( 0 ) );
+		
+		anim.setFrameDuration( (1000.0f / (float)anim.getFrameRate()) );
+		anim.setAnimationDuration( anim.getFrameDuration() * anim.getNumberOfFrames() );
+		anim.setAnimationTime( 0.0f );
+		
 		return anim;
+	}
+	
+	private static String getNextLine( BufferedReader fileIn ) throws IOException{
+		
+		String line = "";
+		
+		do {
+			line = fileIn.readLine();
+			
+			if ( line == null ){
+				return line;
+			}
+		}
+		while( line.trim().length() == 0 || line.trim().startsWith( "//") || line.trim().equals( "}" ) );
+		
+		if ( line != null ){
+			line = line.trim();
+		}
+		
+		return line;
+		
 	}
 	
 	/**
@@ -127,175 +185,115 @@ public class MD5Animation {
 	 * @param skeletonFrame
 	 * @param numberOfJoints
 	 */
-	private static void buildFrameSkeleton( MD5JointInfo[] jointInfos, 
-			MD5BaseFrameJoint[] baseFrame, 
-			float[] animationData, 
-			MD5Joint[] skeletonFrame, 
-			int numberOfJoints ){
+	private static MD5FrameSkeleton buildFrameSkeleton(
+			List<MD5JointInfo> jointInfos, 
+			List<MD5BaseFrameJoint> baseFrames, 
+			MD5FrameData frameData ){
 		
-		for ( int i = 0; i < numberOfJoints; i++ ){
+		MD5FrameSkeleton skeleton = new MD5FrameSkeleton();
+		
+		for ( int i = 0; i < jointInfos.size(); i++ ){
 			
-			MD5BaseFrameJoint baseJoint = baseFrame[i];
-			
-			Vector3f animatedPos = new Vector3f( baseJoint.getPosition().getX(), 
-												 baseJoint.getPosition().getY(), 
-												 baseJoint.getPosition().getZ() );
-			Quaternarion animatedOrient = new Quaternarion( baseJoint.getOrientation().getX(), 
-															baseJoint.getOrientation().getY(), 
-															baseJoint.getOrientation().getZ(), 
-															baseJoint.getOrientation().getW() );
 			int j = 0;
+			MD5JointInfo jointInfo = jointInfos.get( i );
+			MD5SkeletonJoint animatedJoint = new MD5SkeletonJoint( baseFrames.get( i ) );
 			
-			if ( (jointInfos[i].getFlags() & 1) == 1 ){
-				animatedPos.setX( animationData[ jointInfos[i].getStartIndex() + j] );
+			animatedJoint.setParent( jointInfo.getParent() );
+			
+			if ( (jointInfo.getFlags() & 1) == 1 ){
+				animatedJoint.getPosition().setX( frameData.getFrameData().get( jointInfo.getStartIndex() + j ) );
 				j++;
 			}
 			
-			if ( (jointInfos[i].getFlags() & 2) == 2 ){
-				animatedPos.setY( animationData[ jointInfos[i].getStartIndex() + j] );
+			if ( (jointInfo.getFlags() & 2) == 2 ){
+				animatedJoint.getPosition().setY( frameData.getFrameData().get( jointInfo.getStartIndex() + j ) );
 				j++;
 			}
 			
-			if ( (jointInfos[i].getFlags() & 4) == 4 ){
-				animatedPos.setZ( animationData[ jointInfos[i].getStartIndex() + j] );
+			if ( (jointInfo.getFlags() & 4) == 4 ){
+				animatedJoint.getPosition().setZ( frameData.getFrameData().get( jointInfo.getStartIndex() + j ) );
 				j++;
 			}
 			
-			if ( (jointInfos[i].getFlags() & 8) == 8 ){
-				animatedOrient.setX( animationData[ jointInfos[i].getStartIndex() + j] );
+			if ( (jointInfo.getFlags() & 8) == 8 ){
+				animatedJoint.getOrientation().setX( frameData.getFrameData().get( jointInfo.getStartIndex() + j ) );
 				j++;
 			}
 			
-			if ( (jointInfos[i].getFlags() & 16) == 16 ){
-				animatedOrient.setY( animationData[ jointInfos[i].getStartIndex() + j] );
+			if ( (jointInfo.getFlags() & 16) == 16 ){
+				animatedJoint.getOrientation().setY( frameData.getFrameData().get( jointInfo.getStartIndex() + j ) );
 				j++;
 			}
 			
-			if ( (jointInfos[i].getFlags() & 32) == 32 ){
-				animatedOrient.setZ( animationData[ jointInfos[i].getStartIndex() + j] );
+			if ( (jointInfo.getFlags() & 32) == 32 ){
+				animatedJoint.getOrientation().setZ( frameData.getFrameData().get( jointInfo.getStartIndex() + j ) );
 				j++;
 			}
 			
-			animatedOrient.computeW();
+			animatedJoint.getOrientation().computeW();
 			
-		    /* NOTE: we assume that this joint's parent has
-			already been calculated, i.e. joint's ID should
-			never be smaller than its parent ID. */
-			MD5Joint thisJoint = new MD5Joint();
-			
-			int parent = jointInfos[i].getParent();
-			thisJoint.setParent( parent );
-			thisJoint.setName( jointInfos[i].getName() );
-			
-			if ( thisJoint.getParent() < 0 ){
-				Vector3f thisPosition = new Vector3f( animatedPos.getX(), animatedPos.getY(), animatedPos.getZ() );
-				Quaternarion thisOrient = new Quaternarion( animatedOrient.getX(), animatedOrient.getY(), animatedOrient.getZ(), animatedOrient.getW() );
+			if ( animatedJoint.getParent() >= 0 ){
 				
-				thisJoint.setOrientation( thisOrient );
-				thisJoint.setPosition( thisPosition );
-			}
-			else {
+				MD5SkeletonJoint parentJoint = skeleton.getSkeletonJoints().get( animatedJoint.getParent() );
+				Vector3f rotPos = Quaternarion.rotatePoint( parentJoint.getOrientation(), animatedJoint.getPosition() );
 				
-				MD5Joint parentJoint = skeletonFrame[parent];
-				Vector3f rotatedPosition = Quaternarion.rotatePoint( parentJoint.getOrientation(), animatedPos );
+				animatedJoint.setPosition( Vector3f.add( parentJoint.getPosition(), rotPos ) );
+				animatedJoint.setOrientation( Quaternarion.multiply( parentJoint.getOrientation(), animatedJoint.getOrientation() ) );
 				
-				Vector3f jointPosition = new Vector3f( 0.0f, 0.0f, 0.0f );
-				
-				jointPosition.setX( rotatedPosition.getX() + parentJoint.getPosition().getX()  );
-				jointPosition.setY( rotatedPosition.getY() + parentJoint.getPosition().getY()  );
-				jointPosition.setZ( rotatedPosition.getZ() + parentJoint.getPosition().getZ()  );
-				
-				thisJoint.setPosition( jointPosition );
-				
-				Quaternarion multQuat = Quaternarion.multiply( parentJoint.getOrientation(), animatedOrient );
-				thisJoint.setOrientation( multQuat );
-				Quaternarion normal = Quaternarion.normalize( thisJoint.getOrientation() );
-				thisJoint.setOrientation( normal );
+				animatedJoint.setOrientation( Quaternarion.normalize( animatedJoint.getOrientation() ) );
 			}
 			
-			skeletonFrame[i] = thisJoint;
+			skeleton.getSkeletonJoints().add( animatedJoint );
 		}
 		
+		return skeleton;
 	}
 	
-	public static MD5Joint[] interpolateSkeletons( MD5Joint[] skeletonA, MD5Joint[] skeletonB, int numJoints, float interp ){
+	public void update( float deltaTime ){
 		
-		MD5Joint[] newSkeleton = new MD5Joint[skeletonA.length];
-		
-		for ( int i = 0; i < numJoints; i++ ){
-			
-			MD5Joint joint = new MD5Joint();
-			joint.setParent( skeletonA[i].getParent() );
-			
-			// linear interpolation for position
-			float x = skeletonA[i].getPosition().getX() + interp * ( skeletonB[i].getPosition().getX() - skeletonA[i].getPosition().getX() );
-			float y = skeletonA[i].getPosition().getY() + interp * ( skeletonB[i].getPosition().getY() - skeletonA[i].getPosition().getY() );
-			float z = skeletonA[i].getPosition().getZ() + interp * ( skeletonB[i].getPosition().getZ() - skeletonA[i].getPosition().getZ() );
-			
-			joint.setPosition( new Vector3f( x, y, z ) );
-			
-			Quaternarion slerped = Quaternarion.slerp( skeletonA[i].getOrientation(), skeletonB[i].getOrientation(), interp );
-			joint.setOrientation( slerped );
-		
-			newSkeleton[i] = joint;
+		if ( getNumberOfFrames() < 1 ){
+			return;
 		}
 		
-		return newSkeleton;
+		setAnimationTime( getAnimationTime() + deltaTime );
+		
+		while( getAnimationTime() > getAnimationDuration() ){
+			setAnimationTime( getAnimationTime() - getAnimationDuration() );
+		}
+		
+		while( getAnimationTime() < 0.0f ){
+			setAnimationTime(  getAnimationTime() + getAnimationDuration() );
+		}
+		
+		//Figure out which frame we're on
+		float frameNum = getAnimationTime() / (1000.0f / (float)getFrameRate());
+		int frame0 = (int)Math.floor( frameNum );
+		int frame1 = (int)Math.ceil( frameNum );
+		frame0 = frame0 % getNumberOfFrames();
+		frame1 = frame1 % getNumberOfFrames();
+		
+		float interpolate = (getAnimationTime() % getFrameDuration()) / getFrameDuration();
+		
+		interpolateSkeletons( getAnimatedSkeleton(), getSkeletons().get( frame0 ), getSkeletons().get( frame1 ), interpolate );
 	}
 	
-	public void advanceAnimation( MD5AnimationInfo info, double elapsedTime ){
+	public void interpolateSkeletons( MD5FrameSkeleton finalSkeleton, MD5FrameSkeleton skeleton0, MD5FrameSkeleton skeleton1, float interp ){
 		
-		int maxFrames = getNumberOfFrames() - 1;
-		info.setLastTime( info.getLastTime() + elapsedTime );
-		
-		// go to next frame
-		if ( info.getLastTime() >= info.getMaxTime() ){
+		for ( int i = 0; i < getNumberOfJoints(); i++ ){
 			
-			info.setCurrentFrame( info.getCurrentFrame() + 1 );
-			info.setNextFrame( info.getNextFrame() + 1 );
-			info.setLastTime( 0.0 );
+			MD5SkeletonJoint finalJoint = finalSkeleton.getSkeletonJoints().get( i );
+			MD5SkeletonJoint joint0 = skeleton0.getSkeletonJoints().get( i );
+			MD5SkeletonJoint joint1 = skeleton1.getSkeletonJoints().get( i );
 			
-			if ( info.getCurrentFrame() > maxFrames ){
-				info.setCurrentFrame( 0 );
-			}
+			finalJoint.setParent( joint0.getParent() );
 			
-			if ( info.getNextFrame() > maxFrames ){
-				info.setNextFrame( 0 );
-			}
+			finalJoint.setPosition( Vector3f.lerp( joint0.getPosition(), joint1.getPosition(), interp ) );
+			finalJoint.setOrientation( Quaternarion.slerp( joint0.getOrientation(), joint1.getOrientation(), interp ) );
 		}
 	}
 	
-	private static String getNextLine( BufferedReader fileIn ) throws IOException{
+	public void render(){
 		
-		String line = "";
-		
-		do {
-			line = fileIn.readLine();
-		}
-		while( line == null || line.trim().length() == 0 );
-		
-		return line.trim();
-		
-	}
-	
-	public Boolean checkAnimationValidity( MD5Model model ){
-		
-		if ( model.getNumberOfJoints() != getNumberOfJoints() ){
-			return Boolean.FALSE;
-		}
-		
-		for ( int i = 0; i < model.getNumberOfJoints(); i++ ){
-			
-			if ( model.getBaseSkeleton()[0].getParent() != getSkeletonFrames()[0][i].getParent() ){
-				return Boolean.FALSE;
-			}
-			
-			if ( !model.getBaseSkeleton()[i].getName().equals( getSkeletonFrames()[0][i].getName() ) ){
-				return Boolean.FALSE;
-			}
-		}
-		
-		return Boolean.TRUE;
 	}
 	
 	public int getNumberOfFrames() {
@@ -322,19 +320,111 @@ public class MD5Animation {
 		this.frameRate = frameRate;
 	}
 	
-	public MD5Joint[][] getSkeletonFrames() {
-		return skeletonFrames;
+	public List<MD5JointInfo> getJointInfos() {
+		
+		if ( jointInfos == null ){
+			jointInfos = new ArrayList<MD5JointInfo>();
+		}
+		return jointInfos;
+	}
+
+	public void setJointInfos(List<MD5JointInfo> jointInfos) {
+		this.jointInfos = jointInfos;
+	}
+
+	public List<MD5Bound> getBounds() {
+		if ( bounds == null ){
+			bounds = new ArrayList<MD5Bound>();
+		}
+		return bounds;
+	}
+
+	public void setBounds(List<MD5Bound> bounds) {
+		this.bounds = bounds;
+	}
+
+	public List<MD5BaseFrameJoint> getBaseFrames() {
+		
+		if ( baseFrames == null ){
+			baseFrames = new ArrayList<MD5BaseFrameJoint>();
+		}
+		return baseFrames;
+	}
+
+	public void setBaseFrames(List<MD5BaseFrameJoint> baseFrames) {
+		this.baseFrames = baseFrames;
+	}
+
+	public List<MD5FrameSkeleton> getSkeletons() {
+		
+		if ( skeletons == null ){
+			skeletons = new ArrayList<MD5FrameSkeleton>();
+		}
+		return skeletons;
+	}
+
+	public void setSkeletons(List<MD5FrameSkeleton> skeletons) {
+		this.skeletons = skeletons;
 	}
 	
-	public void setSkeletonFrames( MD5Joint[][] skeletonFrames ) {
-		this.skeletonFrames = skeletonFrames;
+	public List<MD5FrameData> getFrames(){
+		
+		if ( frames == null ){
+			frames = new ArrayList<MD5FrameData>();
+		}
+		
+		return frames;
 	}
 	
-	public MD5BoundingBox[] getBoundingBoxes() {
-		return boundingBoxes;
+	public void setFrames( List<MD5FrameData> someFrames ){
+		frames = someFrames;
 	}
-	
-	public void setBoundingBoxes( MD5BoundingBox[] boundingBoxes ) {
-		this.boundingBoxes = boundingBoxes;
+
+	public MD5FrameSkeleton getAnimatedSkeleton() {
+		return animatedSkeleton;
+	}
+
+	public void setAnimatedSkeleton(MD5FrameSkeleton animatedSkeleton) {
+		this.animatedSkeleton = animatedSkeleton;
+	}
+
+	public int getMd5Version() {
+		return md5Version;
+	}
+
+	public void setMd5Version(int md5Version) {
+		this.md5Version = md5Version;
+	}
+
+	public int getNumAnimatedComponents() {
+		return numAnimatedComponents;
+	}
+
+	public void setNumAnimatedComponents(int numAnimatedComponents) {
+		this.numAnimatedComponents = numAnimatedComponents;
+	}
+
+	public float getAnimationDuration() {
+		return animationDuration;
+	}
+
+	public void setAnimationDuration(float animationDuration) {
+		this.animationDuration = animationDuration;
+	}
+
+	public float getFrameDuration() {
+		return frameDuration;
+	}
+
+	public void setFrameDuration(float frameDuration) {
+		this.frameDuration = frameDuration;
+	}
+
+	public float getAnimationTime() {
+		return animationTime;
+	}
+
+	public void setAnimationTime(float animationTime) {
+		this.animationTime = animationTime;
 	}
 }

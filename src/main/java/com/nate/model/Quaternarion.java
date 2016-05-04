@@ -16,6 +16,10 @@ public class Quaternarion {
 	
 	public Quaternarion(){}
 	
+	public Quaternarion copy(){
+		return new Quaternarion( this.getX(), this.getY(), this.getZ(), this.getW() );
+	}
+	
 	public float getX() {
 		return x;
 	}
@@ -53,9 +57,9 @@ public class Quaternarion {
 		float t = 1.0f - ( getX() * getX() ) - ( getY() * getY() ) - ( getZ() * getZ() );
 
 		  if (t < 0.0f)
-		    w = 0.0f;
+		    this.w = 0.0f;
 		  else
-		    w = (float)(-1.0 * Math.sqrt( (double)t ) );
+		    this.w = (float)(-1.0 * Math.sqrt( (double)t ) );
 	}
 	
 	public static Vector3f rotatePoint( Quaternarion orientation, Vector3f position ){

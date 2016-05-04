@@ -1,22 +1,28 @@
 package com.nate.display;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.Sys;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 
 import com.nate.model.MD5Animation;
-import com.nate.model.MD5AnimationInfo;
-import com.nate.model.MD5Joint;
-import com.nate.model.MD5Mesh;
 import com.nate.model.MD5Model;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.nio.channels.FileChannel;
 import java.time.Instant;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.stb.STBImage.stbi_failure_reason;
+import static org.lwjgl.stb.STBImage.stbi_image_free;
+import static org.lwjgl.stb.STBImage.stbi_load_from_memory;
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.system.macosx.Unistd.getpid;
 
@@ -32,8 +38,8 @@ public class MainDisplay {
 	// The window handle
 	private long window;
 	
-	private Float currentAngle = 0.0f;
 	private Float turnAmount = 0.0f;
+	private Float flipAmount = 0.0f;
 	
 	public void run() {
 		System.out.println("Hello LWJGL " + Sys.getVersion() + "!");
@@ -89,22 +95,31 @@ public class MainDisplay {
 				else if ( key == GLFW_KEY_RIGHT ){
 					
 					if ( action == GLFW_PRESS ){
-						setTurn( -5.0f );
+						setTurn( -5.0f + turnAmount );
 					}
-					else if ( action == GLFW_RELEASE ){
-						setTurn( 0.0f );
-					}
+//					else if ( action == GLFW_RELEASE ){
+//						setTurn( 0.0f );
+//					}
 				}
 				else if ( key == GLFW_KEY_LEFT ){
 					
 					if ( action == GLFW_PRESS ){
-						setTurn( 5.0f );
+						setTurn( 5.0f + turnAmount);
 					}
-					else if ( action == GLFW_RELEASE ){
-						setTurn( 0.0f );
+//					else if ( action == GLFW_RELEASE ){
+//						setTurn( 0.0f );
+//					}
+				}
+				else if ( key == GLFW_KEY_UP ){
+					if ( action == GLFW_PRESS ){
+						setFlipAmount( getFlipAmount() + 5.0f );
 					}
 				}
-			
+				else if ( key == GLFW_KEY_DOWN ){
+					if ( action == GLFW_PRESS ){
+						setFlipAmount( getFlipAmount() - 5.0f );
+					}
+				}
 			}
 		});
 
@@ -144,41 +159,34 @@ public class MainDisplay {
 		
 		float aspect = (float)WIDTH / (float)HEIGHT;
 		
-		glOrtho( aspect * -1.0f, aspect, -1, 1, -1, 1 );
+		glOrtho( aspect * -1.0f, aspect, -1, 1, -10, 10 );
 		
 		glMatrixMode( GL_MODELVIEW );
-		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+		glPolygonMode( GL_FRONT, GL_FILL );
 
 		MD5Model newModel = null;
 		MD5Animation anim = null;
 		
 		try {
-			URL newUrl = MD5Model.class.getResource( "/obj_base2_bak.md5mesh" );
-			newModel = MD5Model.loadModel( newUrl.getFile() );
+
+			Integer texId = loadTexture( "pinky_d.tga" );
 			
-			URL animUrl = MD5Model.class.getResource( "/obj_base2_bak.md5anim" );
+			URL newUrl = MD5Model.class.getResource( "/pinky.md5mesh" );
+			newModel = MD5Model.loadModel( newUrl.getFile(), texId );
+			
+			URL animUrl = MD5Model.class.getResource( "/idle1.md5anim" );
 			anim = MD5Animation.loadAnimation( animUrl.getFile() );
-//			anim = null;
+			
+			newModel.setAnimation( anim );
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		MD5AnimationInfo animInfo = new MD5AnimationInfo();
-		
-		if ( anim != null ){
-			animInfo.setCurrentFrame( 0 );
-			animInfo.setNextFrame( 1 );
-			animInfo.setMaxTime( 1.0 / (double)anim.getFrameRate() );
-
-		}
-		
-		MD5Joint[] skeleton = newModel.getBaseSkeleton();
-		
 		long currentTime = 0;
 		long lastTime = 0;
-		
+	
 		// Run the rendering loop until the user has attempted to close
 		// the window or has pressed the ESCAPE key.
 		while ( glfwWindowShouldClose(window) == GL_FALSE ) {
@@ -187,12 +195,8 @@ public class MainDisplay {
 			lastTime = currentTime;
 			
 			if ( anim != null ){
-				currentTime = (Instant.now().toEpochMilli() / anim.getFrameRate());// / 5;
-			}
-			
-			if ( anim != null ){
-				lastTime = currentTime;
-				currentTime = Instant.now().toEpochMilli() / anim.getFrameRate();
+				
+				currentTime = Instant.now().toEpochMilli();// / 5;
 				
 				if ( lastTime == 0 ){
 					lastTime = currentTime;
@@ -200,47 +204,31 @@ public class MainDisplay {
 			}
 			
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
-
+			glEnable( GL_DEPTH_TEST );
+//			glCullFace( GL_CCW );
+//			glEnable( GL_CULL_FACE );
+			
 			glPushMatrix();
 			
-			glEnableClientState( GL_VERTEX_ARRAY );
-			glColor3f( 1.0f, 1.0f, 0.2f );
-
-			glScalef( 0.4f, 0.4f, 0.4f );
-//			glTranslatef( 5.0f, 130.0f, 0.0f );
-			glRotatef( 270.0f, 1.0f, 0.0f, 0.0f );
-			glRotatef( 90.0f, 0.0f, 0.0f, 1.0f );
+				glColor3f( 1.0f, 1.0f, 0.2f );
+	
+				//pinky settings
+				glTranslatef( 0.0f, -0.5f, 0.0f );
+				glScalef( 0.01f, 0.01f, 0.01f );
+				
+				//sumosettings
+//				glTranslatef( 0.0f, -0.5f, 0.0f );
+//				glScalef( 0.6f, 0.6f, 0.6f );
+				
+//				glTranslatef( 5.0f, 130.0f, 0.0f );
+				glRotatef( 270.0f + getFlipAmount(), 1.0f, 0.0f, 0.0f );
+				glRotatef( getTurnAmount(), 0.0f, 0.0f, 1.0f );
 			
-			if ( anim != null ){
+				long delta = currentTime - lastTime;
+				System.out.println( delta );
+				newModel.update( delta );
+				newModel.render();
 				
-				anim.advanceAnimation( animInfo, currentTime - lastTime );
-				skeleton = MD5Animation.interpolateSkeletons( anim.getSkeletonFrames()[animInfo.getCurrentFrame()], 
-												   anim.getSkeletonFrames()[animInfo.getNextFrame()], 
-												   anim.getNumberOfJoints(), 
-												   (float)(animInfo.getLastTime() * anim.getFrameRate()) );
-			}
-			else {
-				skeleton = newModel.getBaseSkeleton();
-			}
-			
-			for ( int mi = 0; mi < newModel.getNumberOfMeshes(); mi++ ){
-				
-				glPushMatrix();
-				
-				MD5Mesh mesh = newModel.getMeshes()[mi];
-				
-				newModel.prepareModel( mesh, skeleton );
-				mesh.getIndexArray().flip();
-				mesh.getVertexArray().flip();
-				
-				glVertexPointer( 3, 0, mesh.getVertexArray() );
-				glDrawElements( GL_TRIANGLES, mesh.getIndexArray() );
-				
-				glPopMatrix();
-			}
-			
-			glDisableClientState( GL_VERTEX_ARRAY );
-			
 			glPopMatrix();
 			
 			glPushMatrix();
@@ -266,16 +254,73 @@ public class MainDisplay {
 		
 	}
 	
-	private void setTurn( Float amount ){
-		turnAmount = amount;
+	private Integer loadTexture( String resourceName ) throws Exception{
+		
+		ByteBuffer byteBuffer;
+		URL fileUrl = MainDisplay.class.getResource( "/" + resourceName );
+		
+		File file = new File( fileUrl.toURI() );
+		
+		if ( !file.exists() ){
+			throw new FileNotFoundException();
+		}
+		
+		FileInputStream fileIn = new FileInputStream( file );
+		FileChannel fch = fileIn.getChannel();
+		
+		byteBuffer = BufferUtils.createByteBuffer((int)fch.size() + 1);
+
+		while ( fch.read( byteBuffer) != -1 ) ;
+		
+		fileIn.close();
+		fch.close();
+		
+		byteBuffer.flip();
+		
+		IntBuffer w = BufferUtils.createIntBuffer(1);
+		IntBuffer h = BufferUtils.createIntBuffer(1);
+		IntBuffer comp = BufferUtils.createIntBuffer(1);
+		
+		// Decode the image
+		ByteBuffer image = stbi_load_from_memory(byteBuffer, w, h, comp, 0);
+		
+		if ( image == null )
+			throw new RuntimeException("Failed to load image: " + stbi_failure_reason());
+		
+		int texId = glGenTextures();
+		glBindTexture( GL_TEXTURE_2D, texId );
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		
+		if ( comp.get( 0 ) == 3 ){
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w.get( 0 ), h.get( 0 ), 0, GL_RGB, GL_UNSIGNED_BYTE, image );
+		}
+		else {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w.get( 0 ), h.get( 0 ), 0, GL_RGBA, GL_UNSIGNED_BYTE, image );
+		}
+		
+		stbi_image_free( image );
+		
+		return texId;
 	}
 	
-	private Float getCurrentAngle(){
-		return currentAngle;
+	private void setTurn( Float amount ){
+		turnAmount = (amount % 360.0f );
 	}
 	
 	private Float getTurnAmount(){
 		return turnAmount;
+	}
+	
+	private Float getFlipAmount(){
+		return flipAmount;
+	}
+	
+	private void setFlipAmount( Float amount ){
+		flipAmount = (amount % 360.0f);
 	}
 	
 }

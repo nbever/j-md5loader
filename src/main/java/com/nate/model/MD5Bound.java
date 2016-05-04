@@ -1,17 +1,18 @@
 package com.nate.model;
 
-public class MD5BoundingBox {
+public class MD5Bound {
 
-	private Vector3f min;
-	private Vector3f max;
+	private Vector3f minimum;
+	private Vector3f maximum;
 	
-	public static MD5BoundingBox parseLine( String line ) throws Exception{
+	public static MD5Bound parseLine( String line ) throws Exception{
 		
-		MD5BoundingBox bound = new MD5BoundingBox();
+		MD5Bound bound = new MD5Bound();
 		
 		String[] tokens = line.split( "[ ,\t]" );
 		
 		if ( tokens.length != 10 ){
+			System.out.println( line );
 			throw new Exception( "Invalid format for bounds.  There should be ten elements." );
 		}
 		
@@ -26,25 +27,31 @@ public class MD5BoundingBox {
 		Vector3f mins = new Vector3f( mx, my, mz );
 		Vector3f maxs = new Vector3f( xx, xy, xz );
 		
-		bound.setMax(  maxs );
-		bound.setMin( mins );
+		bound.setMaximum(  maxs );
+		bound.setMinimum( mins );
 		
 		return bound;
 	}
 	
-	public Vector3f getMin(){
-		return min;
+	public MD5Bound(){
+		
+	}
+
+	public Vector3f getMinimum() {
+		return minimum;
+	}
+
+	public void setMinimum(Vector3f minimum) {
+		this.minimum = minimum;
+	}
+
+	public Vector3f getMaximum() {
+		return maximum;
+	}
+
+	public void setMaximum(Vector3f maximum) {
+		this.maximum = maximum;
 	}
 	
-	public void setMin( Vector3f min ){
-		this.min = min;
-	}
 	
-	public Vector3f getMax(){
-		return max;
-	}
-	
-	public void setMax( Vector3f max ){
-		this.max = max;
-	}
 }
