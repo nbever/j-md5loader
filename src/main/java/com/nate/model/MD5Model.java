@@ -139,49 +139,6 @@ public class MD5Model {
 		}
 	}
 	
-//	public void prepareMesh( MD5Mesh mesh, List<? extends MD5Joint> skeleton ){
-//		
-//		mesh.initializeBuffers();
-//		
-//		for ( int i = 0; i < mesh.getNumberOfVertices(); i++ ){
-//			
-//			MD5Vertex vert = mesh.getVertices()[i];
-//			
-//			// they get the actuals then zero them out... seems odd.
-//			
-//			Vector3f position = new Vector3f( 0.0f, 0.0f, 0.0f );
-//			Vector3f normal = new Vector3f( 0.0f, 0.0f, 0.0f );
-//			
-//			vert.setPosition( position );
-//			vert.setNormal( normal );
-//			
-//			for ( int j = 0; j < vert.getWeightCount(); j++ ){
-//				
-//				MD5Weight weight = mesh.getWeights()[vert.getStartWeight() + j ];
-//				MD5Joint joint = skeleton.get( weight.getJoint() );
-//				
-//				Vector3f rotPos = Quaternarion.rotatePoint( joint.getOrientation(), weight.getPosition() );
-//				
-//				Vector3f j_r = Vector3f.add( joint.getPosition(), rotPos );
-//				vert.setPosition( Vector3f.scalar( j_r, weight.getBias() ) );
-//				position = Vector3f.add( position, vert.getPosition() );
-//				
-//				Vector3f o_n = Quaternarion.rotatePoint( joint.getOrientation(), vert.getNormal() );
-//				vert.setNormal( Vector3f.scalar( o_n, weight.getBias() ) );
-//				normal = Vector3f.add( vert.getNormal(), normal );
-//				
-//			}
-//			
-//			mesh.getVertexArray().put( vert.getPosition().getX() );
-//			mesh.getVertexArray().put( vert.getPosition().getY() );
-//			mesh.getVertexArray().put( vert.getPosition().getZ() );
-//			
-//			mesh.getNormalArray().put( vert.getNormal().getX() );
-//			mesh.getNormalArray().put( vert.getNormal().getY() );
-//			mesh.getNormalArray().put( vert.getNormal().getZ() );
-//		}
-//	}
-	
 	public void prepareNormals( MD5Mesh mesh ){
 		
 		mesh.getNormalArray().clear();
