@@ -18,6 +18,7 @@ public class MD5Mesh {
 	private int numberOfWeights;
 	
 	private Integer textureId;
+	private Quaternarion color;
 	
 	private String shader;
 	
@@ -25,6 +26,8 @@ public class MD5Mesh {
 	private IntBuffer indexArray;
 	private FloatBuffer texelArray;
 	private FloatBuffer normalArray;
+	
+	public MD5Mesh(){}
 
 	protected static MD5Mesh loadMesh( BufferedReader fileIn, Integer texId ) throws Exception {
 		
@@ -220,5 +223,13 @@ public class MD5Mesh {
 	
 	public void setNormalArray( FloatBuffer buf ){
 		normalArray = buf;
+	}
+	
+	public void setColor( Quaternarion aColor ){
+		color = aColor;
+	}
+	
+	public Quaternarion getColor(){
+		return color;
 	}
 }

@@ -192,4 +192,10 @@ public class Quaternarion {
 		
 		return rz;
 	}
+	
+	@Override
+	public String toString() {
+	
+		return "(" + getX() + ", " + getY() + ", " + getZ() + ", " + getW() + ")";
+	}
 }

@@ -29,6 +29,9 @@ public class MD5Animation {
 	float animationDuration;
 	float frameDuration;
 	float animationTime;
+
+	private MD5FrameSkeleton transitionJoints;
+	private boolean transitionJointsUsed = false;
 	
 	public static MD5Animation loadAnimation( String file ) throws Exception{
 		
@@ -250,6 +253,10 @@ public class MD5Animation {
 	}
 	
 	public void update( float deltaTime ){
+		update( deltaTime, null );
+	}
+	
+	public void update( float deltaTime, MD5FrameSkeleton nextFrame ){
 		
 		if ( getNumberOfFrames() < 1 ){
 			return;
@@ -258,7 +265,9 @@ public class MD5Animation {
 		setAnimationTime( getAnimationTime() + deltaTime );
 		
 		while( getAnimationTime() > getAnimationDuration() ){
-			setAnimationTime( getAnimationTime() - getAnimationDuration() );
+			// no clue why this subtraction is here yo...
+//			setAnimationTime( getAnimationTime() - getAnimationDuration() );
+			setAnimationTime( 0 );
 		}
 		
 		while( getAnimationTime() < 0.0f ){
@@ -268,13 +277,27 @@ public class MD5Animation {
 		//Figure out which frame we're on
 		float frameNum = getAnimationTime() / (1000.0f / (float)getFrameRate());
 		int frame0 = (int)Math.floor( frameNum );
-		int frame1 = (int)Math.ceil( frameNum );
 		frame0 = frame0 % getNumberOfFrames();
-		frame1 = frame1 % getNumberOfFrames();
+		
+		if ( nextFrame == null ){
+			int frame1 = (int)Math.ceil( frameNum );
+			frame1 = frame1 % getNumberOfFrames();
+			nextFrame = getSkeletons().get( frame1 );
+		}
 		
 		float interpolate = (getAnimationTime() % getFrameDuration()) / getFrameDuration();
+		MD5FrameSkeleton frame0Skel = getSkeletons().get( frame0 );
 		
-		interpolateSkeletons( getAnimatedSkeleton(), getSkeletons().get( frame0 ), getSkeletons().get( frame1 ), interpolate );
+		if ( isTransitionUsed() == false && getTransitionJoints() != null ){
+			if ( frame0 == 0 ){
+				frame0Skel = getTransitionJoints();
+			}
+			else if ( frame0 > 0 ){
+				setTransitionUsed( true );
+			}
+		}
+		
+		interpolateSkeletons( getAnimatedSkeleton(), frame0Skel, nextFrame, interpolate );
 	}
 	
 	public void interpolateSkeletons( MD5FrameSkeleton finalSkeleton, MD5FrameSkeleton skeleton0, MD5FrameSkeleton skeleton1, float interp ){
@@ -426,5 +449,22 @@ public class MD5Animation {
 
 	public void setAnimationTime(float animationTime) {
 		this.animationTime = animationTime;
+	}
+	
+	protected void setTransitionJoints( MD5FrameSkeleton joints ){
+		transitionJoints = joints;
+		setTransitionUsed( false );
+	}
+	
+	private MD5FrameSkeleton getTransitionJoints(){
+		return transitionJoints;
+	}
+	
+	private void setTransitionUsed( boolean isIt ){
+		transitionJointsUsed = isIt;
+	}
+	
+	private boolean isTransitionUsed(){
+		return transitionJointsUsed;
 	}
 }

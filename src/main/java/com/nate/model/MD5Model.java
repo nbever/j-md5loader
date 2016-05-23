@@ -19,7 +19,7 @@ public class MD5Model {
 	private boolean hasAnimation;
 	List<MD5Joint> joints;
 	List<MD5Mesh> meshes;
-	
+
 	private MD5Animation animation;
 	
 	public static MD5Model loadModel( String file, Integer textureId ) throws Exception{
@@ -191,7 +191,7 @@ public class MD5Model {
 	}
 	
 	public void update( float deltaTime ){
-
+		
 		if ( hasAnimation() ){
 			
 			getAnimation().update( deltaTime );
@@ -221,7 +221,12 @@ public class MD5Model {
 //	        renderNormals( getMeshes().get( i ) );
 	    }
 
-	    renderSkeleton( getAnimation().getAnimatedSkeleton().getSkeletonJoints() );
+	    if ( hasAnimation() ){
+//	    	renderSkeleton( getAnimation().getAnimatedSkeleton().getSkeletonJoints() );
+	    }
+	    else {
+	    	renderSkeleton( getJoints() );
+	    }
 	    
 	    
 	    glPopMatrix();
@@ -230,6 +235,10 @@ public class MD5Model {
 	public void renderMesh( MD5Mesh mesh ){
 		
 	    glColor3f( 1.0f, 1.0f, 1.0f );
+	    
+	    if ( mesh.getColor() != null ){
+	    	glColor4f( mesh.getColor().getX(), mesh.getColor().getY(), mesh.getColor().getZ(), mesh.getColor().getW() );
+	    }
 	    
 	    glEnableClientState( GL_VERTEX_ARRAY );
 	    glEnableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -387,6 +396,11 @@ public class MD5Model {
 	}
 	
 	public void setAnimation( MD5Animation anAnim ){
+		
+		if ( hasAnimation() ){
+			getAnimation().setTransitionJoints( getAnimation().getAnimatedSkeleton() );
+		}
+		
 		this.animation = anAnim;
 		this.hasAnimation = true;
 	}
@@ -396,6 +410,6 @@ public class MD5Model {
 	}
 	
 	public boolean hasAnimation(){
-		return hasAnimation;
+		return (getAnimation() != null);
 	}
 }

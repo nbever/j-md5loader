@@ -169,16 +169,26 @@ public class MainDisplay {
 		
 		try {
 
-			Integer texId = loadTexture( "pinky_d.tga" );
+//			Integer texId = loadTexture( "pinky_d.tga" );
+//			
+//			URL newUrl = MD5Model.class.getResource( "/pinky.md5mesh" );
+//			newModel = MD5Model.loadModel( newUrl.getFile(), texId );
+//			
+//			URL animUrl = MD5Model.class.getResource( "/idle1.md5anim" );
+//			anim = MD5Animation.loadAnimation( animUrl.getFile() );
+//			
+//			newModel.setAnimation( anim );
+
+			Integer texId = loadTexture( "default_sumo_tex.png" );
 			
-			URL newUrl = MD5Model.class.getResource( "/pinky.md5mesh" );
+			URL newUrl = MD5Model.class.getResource( "/base_mawashi.md5mesh" );
 			newModel = MD5Model.loadModel( newUrl.getFile(), texId );
 			
-			URL animUrl = MD5Model.class.getResource( "/idle1.md5anim" );
+			URL animUrl = MD5Model.class.getResource( "/slowwalk.md5anim" );
 			anim = MD5Animation.loadAnimation( animUrl.getFile() );
-			
+//			
 			newModel.setAnimation( anim );
-
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -213,19 +223,19 @@ public class MainDisplay {
 				glColor3f( 1.0f, 1.0f, 0.2f );
 	
 				//pinky settings
-				glTranslatef( 0.0f, -0.5f, 0.0f );
-				glScalef( 0.01f, 0.01f, 0.01f );
+//				glTranslatef( 0.0f, -0.5f, 0.0f );
+//				glScalef( 0.01f, 0.01f, 0.01f );
 				
 				//sumosettings
-//				glTranslatef( 0.0f, -0.5f, 0.0f );
-//				glScalef( 0.6f, 0.6f, 0.6f );
+				glTranslatef( 0.0f, -0.5f, 0.0f );
+				glScalef( 0.3f, 0.3f, 0.3f );
 				
 //				glTranslatef( 5.0f, 130.0f, 0.0f );
 				glRotatef( 270.0f + getFlipAmount(), 1.0f, 0.0f, 0.0f );
 				glRotatef( getTurnAmount(), 0.0f, 0.0f, 1.0f );
 			
 				long delta = currentTime - lastTime;
-				System.out.println( delta );
+
 				newModel.update( delta );
 				newModel.render();
 				
