@@ -397,6 +397,10 @@ public class MD5Model {
 	
 	public void setAnimation( MD5Animation anAnim ){
 		
+		if ( anAnim == null ){
+			return;
+		}
+		
 		if ( hasAnimation() ){
 			anAnim.setTransitionJoints( getAnimation().getAnimatedSkeleton() );
 		}

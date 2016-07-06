@@ -26,9 +26,12 @@ public class MD5Animation {
 	private int frameRate;
 	private int numAnimatedComponents;
 	
-	float animationDuration;
+	float animationDuration = 0.0f;
 	float frameDuration;
-	float animationTime;
+	float animationTime = 0.0f;
+	
+	private boolean repeat = true;
+	private boolean finished = false;
 
 	private MD5FrameSkeleton transitionJoints;
 	private boolean transitionJointsUsed = false;
@@ -264,7 +267,12 @@ public class MD5Animation {
 		
 		setAnimationTime( getAnimationTime() + deltaTime );
 		
-		while( getAnimationTime() > getAnimationDuration() ){
+		if ( shouldIRepeat() == Boolean.FALSE &&  getAnimationTime() > getAnimationDuration() ){
+			finished = true;
+			return;
+		}
+		
+		if ( getAnimationTime() > getAnimationDuration() ){
 			// no clue why this subtraction is here yo...
 //			setAnimationTime( getAnimationTime() - getAnimationDuration() );
 			setAnimationTime( 0 );
@@ -277,6 +285,7 @@ public class MD5Animation {
 		//Figure out which frame we're on
 		float frameNum = getAnimationTime() / (1000.0f / (float)getFrameRate());
 		int frame0 = (int)Math.floor( frameNum );
+		
 		frame0 = frame0 % getNumberOfFrames();
 		
 		if ( nextFrame == null ){
@@ -466,5 +475,21 @@ public class MD5Animation {
 	
 	private boolean isTransitionUsed(){
 		return transitionJointsUsed;
+	}
+	
+	public void setRepeat( boolean shouldI ){
+		this.repeat = shouldI;
+	}
+	
+	public boolean shouldIRepeat(){
+		return this.repeat;
+	}
+	
+	public boolean isFinished(){
+		return finished;
+	}
+	
+	public void restart(){
+		finished = false;
 	}
 }
