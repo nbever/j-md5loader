@@ -404,7 +404,7 @@ public class MD5Model {
 		if ( hasAnimation() ){
 			anAnim.setTransitionJoints( getAnimation().getAnimatedSkeleton() );
 		}
-		
+	
 		this.animation = anAnim;
 		this.hasAnimation = true;
 	}

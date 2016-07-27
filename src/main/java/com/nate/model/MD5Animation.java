@@ -29,12 +29,15 @@ public class MD5Animation {
 	float animationDuration = 0.0f;
 	float frameDuration;
 	float animationTime = 0.0f;
+	float transitionTime = 0.0f;
 	
 	private boolean repeat = true;
 	private boolean finished = false;
 
 	private MD5FrameSkeleton transitionJoints;
 	private boolean transitionJointsUsed = false;
+	
+	public static final float TRANSITION_TIME = 300;
 	
 	public static MD5Animation loadAnimation( String file ) throws Exception{
 		
@@ -157,6 +160,7 @@ public class MD5Animation {
 		anim.setFrameDuration( (1000.0f / (float)anim.getFrameRate()) );
 		anim.setAnimationDuration( anim.getFrameDuration() * anim.getNumberOfFrames() );
 		anim.setAnimationTime( 0.0f );
+		anim.setTransitionTime( 0.0f );
 		
 		return anim;
 	}
@@ -256,7 +260,29 @@ public class MD5Animation {
 	}
 	
 	public void update( float deltaTime ){
-		update( deltaTime, null );
+		
+		if ( isTransitionUsed() || getTransitionJoints() == null ){
+			update( deltaTime, null );
+		}
+		else {
+			updateTransition( deltaTime );
+		}
+	}
+	
+	public void updateTransition( float deltaTime ){
+		
+		setTransitionTime( getTransitionTime() + deltaTime );
+		
+		if ( getTransitionTime() >= TRANSITION_TIME ){
+			setAnimationTime( 0.0f );
+			setTransitionUsed( true );
+			update( deltaTime, null );
+			return;
+		}
+		
+		float interpolate = (getTransitionTime() % TRANSITION_TIME) / TRANSITION_TIME;
+		
+		interpolateSkeletons( getAnimatedSkeleton(), getTransitionJoints(), getSkeletons().get( 1 ), interpolate );
 	}
 	
 	public void update( float deltaTime, MD5FrameSkeleton nextFrame ){
@@ -297,15 +323,16 @@ public class MD5Animation {
 		float interpolate = (getAnimationTime() % getFrameDuration()) / getFrameDuration();
 		MD5FrameSkeleton frame0Skel = getSkeletons().get( frame0 );
 		
-		if ( isTransitionUsed() == false && getTransitionJoints() != null ){
-			if ( frame0 == 0 ){
-				frame0Skel = getTransitionJoints();
-			}
-			else if ( frame0 > 0 ){
-				setTransitionUsed( true );
-			}
-		}
-		
+//		if ( isTransitionUsed() == false && getTransitionJoints() != null ){
+//			if ( frame0 == 0 ){
+//				frame0Skel = getTransitionJoints();
+//				setInTransition( true );
+//			}
+//			else if ( frame0 > 0 ){
+//				setTransitionUsed( true );
+//			}
+//		}
+
 		interpolateSkeletons( getAnimatedSkeleton(), frame0Skel, nextFrame, interpolate );
 	}
 	
@@ -460,6 +487,14 @@ public class MD5Animation {
 		this.animationTime = animationTime;
 	}
 	
+	public float getTransitionTime() {
+		return transitionTime;
+	}
+	
+	public void setTransitionTime( float aTime ){
+		this.transitionTime = aTime;
+	}
+	
 	protected void setTransitionJoints( MD5FrameSkeleton joints ){
 		transitionJoints = joints;
 		setTransitionUsed( false );
@@ -475,6 +510,14 @@ public class MD5Animation {
 	
 	private boolean isTransitionUsed(){
 		return transitionJointsUsed;
+	}
+	
+	public boolean isTransitioning(){
+		if ( getTransitionJoints() != null && !isTransitionUsed() ){
+			return true;
+		}
+		
+		return false;
 	}
 	
 	public void setRepeat( boolean shouldI ){
